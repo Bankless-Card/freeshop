@@ -1,0 +1,24 @@
+# deps
+node_modules/
+
+# foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/**/dry-run/
+contracts/broadcast/*/31337/
+
+# env / secrets — never commit keys
+.env
+.env.*
+!.env.example
+
+# tooling output
+coverage/
+lcov.info
+slither-report.json
+aderyn-report.md
+contracts/report.md
+contracts/aderyn-report.md
+
+# os / editor
+.DS_Store

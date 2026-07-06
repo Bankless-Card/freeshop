@@ -1,0 +1,12 @@
+{
+  "name": "freeshop",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Decentralized storefront launcher — per-product escrow contracts, static self-hosted storefronts, launcher web app",
+  "scripts": {
+    "contracts:build": "forge build --root contracts",
+    "contracts:test": "forge test --root contracts",
+    "abi:export": "node packages/shared/scripts/export-abis.mjs"
+  },
+  "packageManager": "pnpm@10.11.0"
+}

@@ -1,0 +1,14 @@
+{
+  "name": "@freeshop/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared artifacts across launcher/storefront: contract ABIs, config schemas, crypto helpers",
+  "exports": {
+    "./abis/StoreEscrow": "./abis/StoreEscrow.json",
+    "./abis/StorefrontFactory": "./abis/StorefrontFactory.json"
+  },
+  "scripts": {
+    "export-abis": "node scripts/export-abis.mjs"
+  }
+}
