@@ -54,19 +54,27 @@ this file tracks *execution* state per milestone.
 
 Definition of done: a customer can open the static site, connect, pay in the store's single asset, submit encrypted fulfillment (emitted in the pay tx), and check status — against a testnet store. **Met on anvil via e2e test; testnet + real-wallet run pending Sepolia deploy (M1 open item).**
 
-## M3 — Launcher backend + deploy flow (not started)
+## M3 — Launcher backend + deploy flow (code complete 2026-07-06; browser QA with a wallet pending)
 
-`apps/launcher/` — Next.js App Router; backend allowed (Launcher only, never Storefront).
+`apps/launcher/` — Next.js 16 App Router + wagmi v3; backend allowed (Launcher only, never Storefront).
 
-- [ ] SIWE auth (connected address = merchant identity)
-- [ ] Postgres (Drizzle): merchant accounts only — wallet address ↔ required-but-unverified email; email update; delete capability (backend PII note §6.1)
-- [ ] Product creation form: name/description/images, price, single payment asset (ETH or USDC), fulfillment-schema builder
-- [ ] Merchant key ceremony: personal_sign fixed domain message → derive x25519 keypair → pubkey into deploy params; loss/re-derivation UX + warnings
-- [ ] Deploy flow: cost estimate (gas + 0.01 ETH fee) → factory `deployStore` from merchant wallet
-- [ ] Storefront package generation: pre-filled `store.config.json`, zip download, template-repo link
-- [ ] Compliance + privacy disclosures at onboarding (merchant responsibility; ciphertext permanence)
+- [x] SIWE auth via viem/siwe (no extra dep; ERC-1271/6492 smart wallets supported): nonce/verify/logout routes, iron-session cookie; wallet address = merchant identity
+- [x] Drizzle + Postgres: merchants table (address ↔ required-unverified email). `DATABASE_URL` → node-postgres; unset → embedded PGlite under `.data/` (zero-infra dev). Email update + full account deletion (`/account`, `DELETE /api/me`)
+- [x] Onboarding gate: required email + two acknowledgements (merchant-only compliance responsibility; ciphertext permanence/key-loss)
+- [x] Create-store wizard (`/new`): product form, ETH/USDC single-asset choice (USDC appears when `NEXT_PUBLIC_USDC_ADDRESS` set), price, permanent payout address (defaults to connected wallet), fulfillment-schema builder (label/key/type/required, auto-slug, dedupe validation)
+- [x] Key ceremony: sign `KEY_DERIVATION_MESSAGE` → derive x25519 → pubkey into deploy; loss + phishing warnings; re-derivation explained
+- [x] Deploy flow: reads `launchFee` live from factory, best-effort gas estimate, `deployStore` from merchant wallet, parses `StoreDeployed`, builds final `store.config.json`
+- [x] Storefront package: `/api/storefront-package` zips the **prebuilt** storefront (`template-dist/`, populated by `pnpm prepare-template`) with the merchant's config injected — a ready-to-upload site, no build step for the merchant; plus bare-config download and template-repo link (env)
+- [x] `/stores`: store list read from the factory registry (chain, not backend) with price/asset/order counts
+- [x] Headless e2e (`scripts/e2e-api.mjs`, spawns anvil + production server): SIWE happy path + bad-nonce rejection, email CRUD + validation, zip contents verified (built site + injected config), invalid-config rejection, account deletion. **All passing**; `next build` clean
 
-Definition of done: merchant connects, gives email, defines product + schema, pays fee, gets deployed contract + downloadable configured storefront.
+### M3 open items
+- **Manual browser QA with a wallet extension**: full wizard (connect → SIWE → onboard → deploy on anvil/Sepolia → download zip). Same limitation as M2 — no browser automation here.
+- Gotchas encountered (for future reference): PGlite must be in `serverExternalPackages` (its WASM breaks if bundled); PGlite's data-dir mkdir is not recursive; create-next-app drops a nested `pnpm-workspace.yaml` that hijacks workspace resolution (moved its `ignoredBuiltDependencies` to the root).
+- `NEXT_PUBLIC_*` values are baked at build time — the e2e runs against the defaults (chain 31337); production deploys need env set before `next build`.
+- Launch-fee UI reads whatever the factory says (owner-adjustable) rather than hardcoding 0.01 ETH.
+
+Definition of done: merchant connects, gives email, defines product + schema, pays fee, gets deployed contract + downloadable configured storefront. **Met at the API/protocol level; wallet-in-browser pass pending.**
 
 ## M4 — Dashboard + indexer (not started)
 

@@ -1,6 +1,14 @@
 # deps
 node_modules/
 
+# next.js launcher
+apps/launcher/.next/
+apps/launcher/.data/
+apps/launcher/template-dist/
+
+# vite
+apps/storefront/dist/
+
 # foundry
 contracts/out/
 contracts/cache/

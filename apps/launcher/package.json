@@ -1,0 +1,35 @@
+{
+  "name": "@freeshop/launcher",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "prepare-template": "node scripts/prepare-template.mjs"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.4",
+    "@fontsource/fraunces": "^5.2.9",
+    "@fontsource/ibm-plex-mono": "^5.2.7",
+    "@fontsource/ibm-plex-sans": "^5.2.8",
+    "@freeshop/shared": "workspace:*",
+    "@tanstack/react-query": "^5.101.2",
+    "drizzle-orm": "^0.45.2",
+    "fflate": "^0.8.3",
+    "iron-session": "^8.0.4",
+    "next": "16.2.10",
+    "pg": "^8.22.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "viem": "^2.54.6",
+    "wagmi": "^3.6.21"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/pg": "^8.20.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5"
+  }
+}
