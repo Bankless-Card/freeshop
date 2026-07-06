@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450">
+  <rect width="800" height="450" fill="#ece4d2"/>
+  <g transform="rotate(-3 400 225)">
+    <rect x="250" y="95" width="300" height="260" fill="#4a453a" rx="6"/>
+    <rect x="258" y="103" width="284" height="244" fill="#5c564a" rx="4"/>
+    <rect x="270" y="95" width="10" height="260" fill="#211d15" opacity="0.35"/>
+    <line x1="300" y1="140" x2="520" y2="140" stroke="#ece4d2" stroke-width="3" opacity="0.55"/>
+    <line x1="300" y1="160" x2="470" y2="160" stroke="#ece4d2" stroke-width="3" opacity="0.35"/>
+    <circle cx="500" cy="310" r="26" fill="none" stroke="#ece4d2" stroke-width="3" opacity="0.6"/>
+    <text x="500" y="316" font-family="monospace" font-size="16" fill="#ece4d2" text-anchor="middle" opacity="0.8">№</text>
+  </g>
+  <text x="400" y="420" font-family="monospace" font-size="13" fill="#6b6353" text-anchor="middle" letter-spacing="4">REPLACE ./product.svg WITH YOUR PRODUCT PHOTO</text>
+</svg>

@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "chainId": 31337,
+  "storeAddress": "0xa16E02E87b7454126E5E10d957A927A7F5B5d2be",
+  "product": {
+    "name": "Hand-bound Field Notebook",
+    "description": "96 pages of dot-grid, acid-free paper, bound by hand in waxed canvas. Numbered edition — each notebook is stamped with its order number from this store's escrow contract.\n\nShips worldwide within one week of payment.",
+    "images": ["./product.svg"]
+  },
+  "payment": {
+    "token": "0x0000000000000000000000000000000000000000",
+    "symbol": "ETH",
+    "decimals": 18,
+    "price": "1000000000000000"
+  },
+  "fulfillment": {
+    "fields": [
+      {
+        "name": "email",
+        "label": "Email",
+        "type": "email",
+        "required": true,
+        "placeholder": "you@example.com"
+      },
+      {
+        "name": "shipping_address",
+        "label": "Shipping address",
+        "type": "textarea",
+        "required": true,
+        "placeholder": "Name, street, city, postcode, country"
+      },
+      {
+        "name": "note",
+        "label": "Note to the merchant",
+        "type": "text",
+        "required": false
+      }
+    ]
+  }
+}

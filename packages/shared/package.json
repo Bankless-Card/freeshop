@@ -5,10 +5,23 @@
   "type": "module",
   "description": "Shared artifacts across launcher/storefront: contract ABIs, config schemas, crypto helpers",
   "exports": {
+    ".": "./src/index.ts",
     "./abis/StoreEscrow": "./abis/StoreEscrow.json",
     "./abis/StorefrontFactory": "./abis/StorefrontFactory.json"
   },
   "scripts": {
-    "export-abis": "node scripts/export-abis.mjs"
+    "export-abis": "node scripts/export-abis.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "tweetnacl": "^1.0.3",
+    "viem": "^2.54.6"
+  },
+  "devDependencies": {
+    "@rolldown/binding-darwin-arm64": "^1.1.4",
+    "@types/node": "^26.1.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
   }
 }

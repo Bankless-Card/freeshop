@@ -8,5 +8,8 @@
     "contracts:test": "forge test --root contracts",
     "abi:export": "node packages/shared/scripts/export-abis.mjs"
   },
-  "packageManager": "pnpm@10.11.0"
+  "packageManager": "pnpm@10.11.0",
+  "engines": {
+    "node": ">=22.12"
+  }
 }
