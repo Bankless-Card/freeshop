@@ -21,6 +21,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       headers: { "Content-Type": response.headers.get("content-type") ?? "application/json" },
     });
   } catch {
-    return NextResponse.json({ error: "indexer unreachable" }, { status: 502 });
+    return NextResponse.json(
+      {
+        error:
+          `indexer unreachable at ${ponderUrl} — start it with ` +
+          `\`FACTORY_ADDRESS=<factory> pnpm dev\` in apps/indexer, and check its startup banner: ` +
+          `if the port differs (auto-increments when busy), set PONDER_URL in the launcher env`,
+      },
+      { status: 502 },
+    );
   }
 }

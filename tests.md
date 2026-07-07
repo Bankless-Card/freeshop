@@ -173,6 +173,15 @@ cast send $STORE "withdraw()" --rpc-url http://localhost:8545 \
 - **Anvil not running / wrong port** — the launcher and storefront default to
   `http://127.0.0.1:8545`; a dead RPC shows as "could not read the factory contract" (launcher)
   or the RPC warning banner (storefront).
+- **"indexer unreachable" in the dashboard** — the Ponder process isn't listening where the
+  launcher expects (`PONDER_URL`, default `http://localhost:42069`). Checklist:
+  1. Is it running? `cd apps/indexer && FACTORY_ADDRESS=<factory> pnpm dev`. Without
+     `FACTORY_ADDRESS` it exits immediately with an error.
+  2. Read its startup banner: if 42069 was busy, Ponder auto-increments (e.g. 42070) — either
+     free the port (`lsof -nP -i :42069`) or set `PONDER_URL` in `apps/launcher/.env.local`.
+  3. Anvil must be up *before* the indexer starts, and if you restarted anvil, restart the
+     indexer too (wipe its `.ponder/` dir if it complains about a mismatched chain).
+  4. Remember the local runbook is three processes: `anvil`, the indexer, and the launcher.
 
 ---
 
