@@ -35,7 +35,9 @@ export function Checkout({ config, chain, facts, disabled }: CheckoutProps) {
       : undefined,
   );
 
-  const wrongChain = isConnected && chainId !== chain.id;
+  // Only flag when the wallet has definitively reported a different chain — chainId can be
+  // briefly undefined while wagmi (re)connects.
+  const wrongChain = isConnected && chainId !== undefined && chainId !== chain.id;
   const isEth = (facts?.paymentToken ?? config.payment.token) === ETH_SENTINEL;
   const priceLabel = formatAmount(
     facts?.price ?? BigInt(config.payment.price),

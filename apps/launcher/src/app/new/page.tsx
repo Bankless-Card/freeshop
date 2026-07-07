@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { formatEther, formatUnits, isAddress, parseEventLogs, parseUnits, type Hex } from "viem";
-import { useAccount, usePublicClient, useSignMessage, useWriteContract } from "wagmi";
+import { useAccount, useConnect, usePublicClient, useSignMessage, useSwitchChain, useWriteContract } from "wagmi";
 import {
   ETH_SENTINEL,
   KEY_DERIVATION_MESSAGE,
@@ -426,7 +426,9 @@ function ReviewStep({
 }) {
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
-  const { address: connected, chainId } = useAccount();
+  const { address: connected, chainId: walletChainId, isConnected } = useAccount();
+  const { connect, connectors } = useConnect();
+  const { switchChain, isPending: isSwitching, error: switchError } = useSwitchChain();
   const chain = launcherChain();
 
   const [busy, setBusy] = useState(false);
@@ -437,8 +439,9 @@ function ReviewStep({
   const schemaHash = hashFulfillmentSchema(draft.fields);
   const deployArgs = [payout, draft.asset.token, price, draft.merchantPubKey!, schemaHash] as const;
 
-  useMemo(() => {
+  useEffect(() => {
     if (!publicClient) return;
+    let cancelled = false;
     (async () => {
       try {
         const launchFee = await publicClient.readContract({
@@ -461,11 +464,14 @@ function ReviewStep({
         } catch {
           /* estimate is best-effort; fee still shows */
         }
-        setEstimate({ launchFee, gasEth });
+        if (!cancelled) setEstimate({ launchFee, gasEth });
       } catch {
-        setError("could not read the factory contract — check your RPC");
+        if (!cancelled) setError("could not read the factory contract — check your RPC");
       }
     })();
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [publicClient, connected]);
 
@@ -514,7 +520,10 @@ function ReviewStep({
     }
   }
 
-  const wrongChain = chainId !== chain.id;
+  // Only flag a wrong chain when the wallet has definitively reported one. `chainId` can be
+  // stale or briefly undefined while wagmi (re)connects — treating that as "wrong" strands the
+  // user on a dead button.
+  const wrongChain = isConnected && walletChainId !== undefined && walletChainId !== chain.id;
 
   return (
     <div className="card reveal">
@@ -554,7 +563,10 @@ function ReviewStep({
         </div>
         <div>
           <dt>network</dt>
-          <dd>{chain.name}</dd>
+          <dd>
+            {chain.name} (id {chain.id})
+            {wrongChain ? ` — wallet is on chain ${walletChainId}` : ""}
+          </dd>
         </div>
       </dl>
 
@@ -567,15 +579,32 @@ function ReviewStep({
         <button type="button" className="btn" onClick={onBack} disabled={busy}>
           Back
         </button>
-        <button type="button" className="btn btn--ink" disabled={busy || !estimate || wrongChain} onClick={deploy}>
-          {wrongChain
-            ? `Switch wallet to ${chain.name}`
-            : busy
-              ? "Deploying…"
-              : `Launch store (${estimate ? formatEther(estimate.launchFee) : "…"} ETH + gas)`}
-        </button>
+        {!isConnected ? (
+          <button
+            type="button"
+            className="btn btn--ink"
+            disabled={connectors.length === 0}
+            onClick={() => connect({ connector: connectors[0] })}
+          >
+            Connect wallet
+          </button>
+        ) : wrongChain ? (
+          <button
+            type="button"
+            className="btn btn--ink"
+            disabled={isSwitching}
+            onClick={() => switchChain({ chainId: chain.id })}
+          >
+            {isSwitching ? "Switching…" : `Switch wallet to ${chain.name}`}
+          </button>
+        ) : (
+          <button type="button" className="btn btn--ink" disabled={busy || !estimate} onClick={deploy}>
+            {busy ? "Deploying…" : `Launch store (${estimate ? formatEther(estimate.launchFee) : "…"} ETH + gas)`}
+          </button>
+        )}
       </div>
       {error && <div className="error-box">{error}</div>}
+      {switchError && <div className="error-box">{switchError.message.split("\n")[0]}</div>}
     </div>
   );
 }

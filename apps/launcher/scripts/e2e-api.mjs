@@ -8,14 +8,16 @@ import { spawn } from "node:child_process";
 import assert from "node:assert/strict";
 import { unzipSync, strFromU8 } from "fflate";
 import { createWalletClient, http } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { anvil } from "viem/chains";
 import { createSiweMessage } from "viem/siwe";
 
 const PORT = 3999;
 const BASE = `http://localhost:${PORT}`;
 const ANVIL_PORT = 8545; // must match the RPC baked into the build (anvil default)
-const MERCHANT_PK = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+// Fresh random key per run: SIWE needs no funds, and this keeps the test from colliding with
+// accounts a human created in the local PGlite DB (e.g. via the anvil dev keys).
+const MERCHANT_PK = generatePrivateKey();
 
 const children = [];
 const cleanup = () => children.forEach((child) => child.kill());
