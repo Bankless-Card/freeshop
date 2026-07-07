@@ -48,7 +48,9 @@ keys — they must never live next to real funds.
 ### 1. Chain + factory
 
 ```sh
-anvil                                                   # terminal 1, leave running
+# --state persists the chain across restarts (anvil is in-memory by default: without this,
+# every restart erases all deployed stores, orders, and balances)
+anvil --state ~/.freeshop-anvil-state.json              # terminal 1, leave running
 # terminal 2:
 cd ~/projects/freeshop/contracts
 forge script script/Deploy.s.sol --rpc-url http://localhost:8545 --broadcast \
@@ -159,6 +161,12 @@ cast send $STORE "withdraw()" --rpc-url http://localhost:8545 \
 
 ## Troubleshooting (local anvil + MetaMask)
 
+- **"My stores disappeared"** — anvil is an in-memory chain; stopping it erases everything
+  (factory, stores, orders). Run it with `--state ~/.freeshop-anvil-state.json` so the chain
+  survives restarts. If you do start a fresh chain: redeploy the factory, restart the indexer
+  with the new `FACTORY_ADDRESS` (wipe `apps/indexer/.ponder/`), clear MetaMask activity data,
+  and expect stale saved configs in the launcher for old store addresses. On Sepolia/mainnet
+  this cannot happen — deployed stores are permanent.
 - **Stuck on "Confirm in your wallet…"** — MetaMask didn't raise its popup. Click the extension
   icon directly; the pending request is queued inside it.
 - **Stuck on "Deploying…" / tx sent but never mined** — almost always a stale nonce after an
