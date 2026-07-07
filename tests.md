@@ -122,6 +122,25 @@ until the M4 dashboard ships its decrypt view.
 
 ---
 
+## Troubleshooting (local anvil + MetaMask)
+
+- **Stuck on "Confirm in your wallet…"** — MetaMask didn't raise its popup. Click the extension
+  icon directly; the pending request is queued inside it.
+- **Stuck on "Deploying…" / tx sent but never mined** — almost always a stale nonce after an
+  anvil restart: MetaMask remembers the old chain's transaction count and submits a gapped
+  nonce, which anvil queues forever. Fix: MetaMask → Settings → Advanced → **Clear activity tab
+  data** (with the Anvil network selected), retry. Do this after **every** anvil restart. The
+  app now times out after 2 minutes with this hint instead of hanging.
+- **`eth_call … execution reverted` noise in the anvil log** for selectors `0x95d89b41`
+  (symbol), `0x313ce567` (decimals), `0x70a08231` (balanceOf) — that's MetaMask probing the
+  transaction target to see if it's an ERC-20 so it can prettify the confirmation. The factory
+  and stores aren't tokens, so the probes revert. Harmless; ignore.
+- **Anvil not running / wrong port** — the launcher and storefront default to
+  `http://127.0.0.1:8545`; a dead RPC shows as "could not read the factory contract" (launcher)
+  or the RPC warning banner (storefront).
+
+---
+
 ## Part 2 — Sepolia (the real definition-of-done; needs your keys)
 
 Prereqs: funded Sepolia deployer key, `SEPOLIA_RPC_URL`, `ETHERSCAN_API_KEY`.

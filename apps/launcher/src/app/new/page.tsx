@@ -431,9 +431,13 @@ function ReviewStep({
   const { switchChain, isPending: isSwitching, error: switchError } = useSwitchChain();
   const chain = launcherChain();
 
-  const [busy, setBusy] = useState(false);
+  // "wallet" = waiting for the user to confirm in their wallet; "mining" = tx sent, waiting
+  // for the chain. Distinguished so a stuck deploy tells the user where it is stuck.
+  const [phase, setPhase] = useState<"idle" | "wallet" | "mining">("idle");
+  const [pendingTx, setPendingTx] = useState<Hex>();
   const [error, setError] = useState<string>();
   const [estimate, setEstimate] = useState<{ launchFee: bigint; gasEth?: string }>();
+  const busy = phase !== "idle";
 
   const price = parseUnits(draft.priceInput, draft.asset.decimals);
   const schemaHash = hashFulfillmentSchema(draft.fields);
@@ -477,17 +481,21 @@ function ReviewStep({
 
   async function deploy() {
     if (!publicClient || !estimate) return;
-    setBusy(true);
     setError(undefined);
+    setPendingTx(undefined);
+    let txHash: Hex | undefined;
     try {
-      const txHash = await writeContractAsync({
+      setPhase("wallet");
+      txHash = await writeContractAsync({
         address: publicEnv.factoryAddress,
         abi: storefrontFactoryAbi,
         functionName: "deployStore",
         args: deployArgs,
         value: estimate.launchFee,
       });
-      const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+      setPendingTx(txHash);
+      setPhase("mining");
+      const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash, timeout: 120_000 });
       const [deployed] = parseEventLogs({
         abi: storefrontFactoryAbi,
         eventName: "StoreDeployed",
@@ -514,9 +522,17 @@ function ReviewStep({
       };
       onLaunched({ storeAddress: deployed.args.store, txHash, config });
     } catch (err) {
-      setError(err instanceof Error ? err.message.split("\n")[0] : String(err));
+      if (err instanceof Error && err.name === "WaitForTransactionReceiptTimeoutError") {
+        setError(
+          `transaction ${txHash} was sent but not mined within 2 minutes. On a local anvil this ` +
+            `usually means the wallet used a stale nonce after an anvil restart — in MetaMask: ` +
+            `Settings → Advanced → Clear activity tab data, then try again.`,
+        );
+      } else {
+        setError(err instanceof Error ? err.message.split("\n")[0] : String(err));
+      }
     } finally {
-      setBusy(false);
+      setPhase("idle");
     }
   }
 
@@ -599,10 +615,24 @@ function ReviewStep({
           </button>
         ) : (
           <button type="button" className="btn btn--ink" disabled={busy || !estimate} onClick={deploy}>
-            {busy ? "Deploying…" : `Launch store (${estimate ? formatEther(estimate.launchFee) : "…"} ETH + gas)`}
+            {phase === "wallet"
+              ? "Confirm in your wallet…"
+              : phase === "mining"
+                ? "Deploying…"
+                : `Launch store (${estimate ? formatEther(estimate.launchFee) : "…"} ETH + gas)`}
           </button>
         )}
       </div>
+      {phase === "wallet" && (
+        <p className="field__hint" style={{ textAlign: "right" }}>
+          No popup? Open your wallet extension directly — the request may be waiting there.
+        </p>
+      )}
+      {phase === "mining" && pendingTx && (
+        <p className="field__hint mono" style={{ textAlign: "right", overflowWrap: "anywhere" }}>
+          tx sent: {pendingTx} — waiting for the chain (times out after 2 min)
+        </p>
+      )}
       {error && <div className="error-box">{error}</div>}
       {switchError && <div className="error-box">{switchError.message.split("\n")[0]}</div>}
     </div>

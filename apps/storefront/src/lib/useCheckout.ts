@@ -80,7 +80,7 @@ export function useCheckout(params: CheckoutParams | undefined) {
               functionName: "approve",
               args: [storeAddress, price],
             });
-            await publicClient.waitForTransactionReceipt({ hash: approveHash });
+            await publicClient.waitForTransactionReceipt({ hash: approveHash, timeout: 120_000 });
           }
         }
 
@@ -96,7 +96,7 @@ export function useCheckout(params: CheckoutParams | undefined) {
 
         active = "confirm";
         render(active);
-        const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+        const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash, timeout: 120_000 });
         const [placed] = parseEventLogs({ abi: storeEscrowAbi, eventName: "OrderPlaced", logs: receipt.logs });
         if (!placed) throw new Error("transaction confirmed but no OrderPlaced event found");
 
