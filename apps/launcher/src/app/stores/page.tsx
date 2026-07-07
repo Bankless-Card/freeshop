@@ -4,14 +4,17 @@ import Link from "next/link";
 import { formatUnits } from "viem";
 import { useReadContract, useReadContracts } from "wagmi";
 import { ETH_SENTINEL, storeEscrowAbi, storefrontFactoryAbi } from "@freeshop/shared";
+import { AnalyticsPanel } from "@/components/Analytics";
 import { launcherChain } from "@/lib/chains";
 import { publicEnv } from "@/lib/env";
 import { useAuth } from "@/lib/useAuth";
+import { useMerchantAnalytics } from "@/lib/useIndexer";
 
 export default function Stores() {
   const { me } = useAuth();
   const chain = launcherChain();
   const explorer = chain.blockExplorers?.default?.url;
+  const analytics = useMerchantAnalytics(me.data?.address);
 
   const { data: stores, isPending } = useReadContract({
     address: publicEnv.factoryAddress,
@@ -43,12 +46,21 @@ export default function Stores() {
   return (
     <section className="reveal">
       <h1 className="section-title" style={{ marginTop: 40 }}>
-        <span className="index">STORES</span> Your on-chain registry
+        <span className="index">STORES</span> All stores, one ledger
       </h1>
       <p style={{ fontSize: 14.5, maxWidth: "56ch" }}>
-        This list is read straight from the factory contract — it belongs to your wallet, not to
-        us. Sales analytics, orders, and withdrawals arrive with the dashboard milestone.
+        The store list is read straight from the factory contract — it belongs to your wallet,
+        not to us. Unique customers are counted across your whole store set (the same wallet
+        buying at two stores counts once).
       </p>
+
+      {analytics.isError ? (
+        <div className="error-box">Analytics unavailable — is the indexer running? ({analytics.error.message})</div>
+      ) : analytics.data ? (
+        <div className="card card--flat" style={{ marginTop: 8 }}>
+          <AnalyticsPanel rollup={analytics.data.aggregate} />
+        </div>
+      ) : null}
 
       {isPending && <div className="boot">READING FACTORY…</div>}
       {stores && stores.length === 0 && (

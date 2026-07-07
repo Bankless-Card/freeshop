@@ -12,10 +12,14 @@ import {
   type FulfillmentField,
   type StoreConfig,
 } from "@freeshop/shared";
+import { AnalyticsPanel } from "@/components/Analytics";
+import { OrdersTable } from "@/components/OrdersTable";
 import { SchemaBuilder, fieldsAreValid } from "@/components/SchemaBuilder";
+import { WithdrawPanel } from "@/components/WithdrawPanel";
 import { launcherChain } from "@/lib/chains";
 import { publicEnv } from "@/lib/env";
 import { useAuth } from "@/lib/useAuth";
+import { useStoreAnalytics } from "@/lib/useIndexer";
 
 const DEFAULT_FIELDS: FulfillmentField[] = [
   { name: "email", label: "Email", type: "email", required: true, placeholder: "you@example.com" },
@@ -57,6 +61,8 @@ export default function StoreDetail() {
   });
   const symbol = isEth ? "ETH" : isKnownUsdc ? "USDC" : (tokenMeta?.[0] ?? "TOKEN");
   const decimals = isEth ? 18 : isKnownUsdc ? 6 : (tokenMeta?.[1] ?? 18);
+
+  const analytics = useStoreAnalytics(storeAddress);
 
   // ——— saved config ———
   const saved = useQuery({
@@ -212,9 +218,45 @@ export default function StoreDetail() {
         </div>
       )}
 
+      <section className="section-block">
+        <h2 className="section-title">
+          <span className="index">01</span> Analytics
+        </h2>
+        {analytics.isError ? (
+          <div className="error-box">
+            Analytics unavailable — is the indexer running? ({analytics.error.message})
+          </div>
+        ) : analytics.data ? (
+          <AnalyticsPanel rollup={analytics.data} />
+        ) : (
+          <p className="mono" style={{ fontSize: 13 }}>
+            Reading indexer…
+          </p>
+        )}
+      </section>
+
+      <section className="section-block">
+        <h2 className="section-title">
+          <span className="index">02</span> Orders
+        </h2>
+        <OrdersTable store={storeAddress} symbol={symbol} decimals={decimals} isOwner={!notOwner} />
+      </section>
+
+      <section className="section-block">
+        <h2 className="section-title">
+          <span className="index">03</span> Withdraw
+        </h2>
+        <WithdrawPanel
+          store={storeAddress}
+          symbol={symbol}
+          decimals={decimals}
+          unfulfilled={analytics.data?.unfulfilled}
+        />
+      </section>
+
       <div className="card" style={{ marginTop: 24 }}>
         <h2 className="section-title">
-          <span className="index">01</span> Product
+          <span className="index">04</span> Storefront files — product
         </h2>
         <div className="field">
           <label className="eyebrow" htmlFor="name">
@@ -236,7 +278,7 @@ export default function StoreDetail() {
         </div>
 
         <h2 className="section-title" style={{ marginTop: 28 }}>
-          <span className="index">02</span> Order form
+          <span className="index">04</span> Storefront files — order form
         </h2>
         {!saved.data && (
           <p style={{ marginTop: 0, fontSize: 14 }}>

@@ -8,8 +8,10 @@ Infrastructure that lets a solo merchant sell online for crypto with no backend 
 - **`apps/storefront/`** — static, self-hostable storefront template (zero backend): product page,
   wallet connect, in-browser encryption of order details, pay/status/claim-refund flows.
 - **`apps/launcher/`** — the platform web app (the only component with a backend): SIWE auth,
-  merchant accounts, store deployment wizard, storefront package generation. Dashboard + indexer
-  arrive in milestone 4.
+  merchant accounts, store deployment wizard, storefront package generation, and the merchant
+  dashboard (analytics, orders with in-browser decryption, fulfil/refund/withdraw).
+- **`apps/indexer/`** — Ponder indexer over the factory + all deployed stores; serves the
+  read-only analytics API the dashboard uses. Derived state, rebuildable from chain.
 - **`packages/shared/`** — contract ABIs, config schemas, and crypto helpers shared across apps.
 
 Execution state and per-milestone checklists live in [TASKS.md](TASKS.md).

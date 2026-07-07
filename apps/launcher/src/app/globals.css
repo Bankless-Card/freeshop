@@ -491,6 +491,120 @@ h3 {
   }
 }
 
+/* ——— sales chart (printed ledger bars) ——— */
+
+.chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 90px;
+  margin-top: 8px;
+  padding: 6px 0 0;
+  border-bottom: 2px solid var(--ink);
+}
+
+.chart__bar {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.chart__fill {
+  width: 100%;
+  min-height: 2px;
+  background: var(--verdigris);
+  transition: height 300ms ease;
+}
+
+.chart__fill[data-empty] {
+  background: var(--rule);
+}
+
+/* ——— orders ——— */
+
+.orders {
+  margin-top: 20px;
+}
+
+.order-row {
+  border-bottom: 1px dotted var(--rule);
+  padding: 14px 0;
+}
+
+.order-row__head {
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  font-size: 13.5px;
+}
+
+.order-row__body {
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.order-row__actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.order-details {
+  margin: 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 16px;
+}
+
+.order-details dt {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+  align-self: baseline;
+}
+
+.order-details dd {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.badge {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  padding: 3px 8px 2px;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+}
+
+.badge--paid,
+.badge--fulfilled {
+  color: var(--verdigris);
+}
+
+.badge--refunded {
+  color: var(--vermilion);
+}
+
+.badge--cancelled {
+  color: var(--ink-soft);
+}
+
+.ink-soft {
+  color: var(--ink-soft);
+}
+
+.section-block {
+  padding: 28px 0;
+  border-bottom: 2px dashed var(--rule);
+}
+
 /* ——— misc ——— */
 
 .boot {

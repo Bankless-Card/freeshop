@@ -23,3 +23,6 @@ export function sessionSecret(): string {
 }
 
 export const databaseUrl = process.env.DATABASE_URL || undefined;
+
+/** Base URL of the Ponder indexer (server-only; the browser goes through /api/indexer). */
+export const ponderUrl = process.env.PONDER_URL || "http://localhost:42069";

@@ -6,6 +6,10 @@ apps/launcher/.next/
 apps/launcher/.data/
 apps/launcher/template-dist/
 
+# ponder indexer
+apps/indexer/.ponder/
+apps/indexer/generated/
+
 # vite
 apps/storefront/dist/
 

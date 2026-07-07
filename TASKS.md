@@ -79,17 +79,21 @@ Definition of done: a customer can open the static site, connect, pay in the sto
 
 Definition of done: merchant connects, gives email, defines product + schema, pays fee, gets deployed contract + downloadable configured storefront. **Met at the API/protocol level; wallet-in-browser pass pending.**
 
-## M4 — Dashboard + indexer (not started)
+## M4 — Dashboard + indexer (code complete 2026-07-07; browser QA pending)
 
-- [ ] Ponder indexer (Postgres-backed, in Launcher backend): `StoreDeployed`, `OrderPlaced`, `StatusChanged`, `Refunded`, `RefundClaimed`, `Withdrawn`; treat as rebuildable derived state
-- [ ] Stores list from factory registry
-- [ ] Aggregate analytics across all merchant stores — unique customers deduped by wallet across stores (not summed per-store)
-- [ ] Per-store analytics: sales count, sales over time, refunds, unique customers
-- [ ] Orders table: status, buyer, amount, timestamp, encrypted blob + client-side decrypt (re-sign → re-derive key; plaintext never leaves browser)
-- [ ] Order management: on-chain setStatus, refund
-- [ ] Per-store withdraw with withdrawable balance + outstanding-unfulfilled-orders warning
+- [x] Ponder 0.16 indexer (`apps/indexer/`): factory pattern picks up every deployed store automatically; indexes `StoreDeployed`, `OrderPlaced`, `StatusChanged`, `Refunded`, `Withdrawn` into stores/orders/withdrawals tables. PGlite in dev (`ponder dev`), Postgres in prod (`ponder start` + `DATABASE_URL`). Rebuildable derived state — wipe `.ponder/` and it re-syncs from chain
+- [x] Read-only analytics API (Hono in Ponder): merchant aggregate (unique buyers deduped across the whole store set via `COUNT(DISTINCT buyer)` — never summed per-store), per-store rollup, orders with encrypted blobs. Launcher proxies at `/api/indexer/*` (session required, `PONDER_URL` env)
+- [x] `/stores`: aggregate analytics panel (sales, unique customers, refunds, awaiting-fulfilment, gross·refunded per asset) + 30-day CSS-bar sales chart
+- [x] `/stores/[address]`: per-store analytics · orders table with sign-to-unlock **client-side decrypt** (key derived from a fresh signature, held in component state only, plaintext never leaves the browser) · Mark fulfilled / Cancel / Refund on-chain actions · Withdraw panel with live `availableBalance()` and the unfulfilled-orders warning (funds withdrawn are no longer available for refunds)
+- [x] Indexer e2e (`apps/indexer/scripts/e2e-indexer.mjs`): seeds anvil with 2 stores + 4 orders from overlapping buyers + fulfil + refund + withdraw, runs `ponder dev`, asserts every rollup number **including cross-store unique dedup (2, not 3)** and decrypts a blob fetched from the API. Launcher API e2e still green; `next build` clean
 
-Definition of done: PRD §9 dashboard bullets all demonstrable on testnet.
+### M4 open items
+- **Manual browser QA**: dashboard flow with MetaMask (unlock/decrypt, fulfil, refund, withdraw) — steps added to `tests.md`. Also the recurring M2/M3 wallet QA.
+- Ponder pins drizzle-orm 0.41.0 — the indexer must depend on exactly that version or types clash with ponder's bundled copy.
+- Ponder's `/ready` is not a reliable "backfill finished" signal; the e2e polls for actual data instead.
+- Dev runbook is now 4 processes: anvil, `ponder dev` (needs `FACTORY_ADDRESS`), launcher `pnpm dev`, and optionally a served storefront. Documented in tests.md/READMEs.
+
+Definition of done: PRD §9 dashboard bullets all demonstrable on testnet. **Demonstrated on anvil via e2e; testnet pass still gated on the Sepolia deploy (M1 open item).**
 
 ## M5 — Hardening (not started; mostly human tasks)
 

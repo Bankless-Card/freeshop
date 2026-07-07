@@ -16,7 +16,11 @@ pnpm --filter @freeshop/shared test    # crypto round-trip + full anvil protocol
 
 cd apps/launcher
 pnpm build && pnpm prepare-template
-node scripts/e2e-api.mjs               # SIWE, email CRUD, storefront-zip assertions
+node scripts/e2e-api.mjs               # SIWE, email CRUD, store-config persistence, zip assertions
+
+cd ../indexer
+node scripts/e2e-indexer.mjs           # ponder over a seeded anvil: analytics incl. cross-store
+                                       # unique-buyer dedup, statuses, blob decryption via API
 ```
 
 All three must pass. They cover: every contract path (including hostile refund recipients and
@@ -101,7 +105,33 @@ At `http://localhost:8080`, as the **buyer** account verify:
 - [ ] Switch MetaMask to another network → pay button becomes "Switch wallet to Anvil"; clicking it switches back.
 - [ ] Tamper check: edit a field's `label` in `/tmp/mystore/store.config.json`, reload → red schema-mismatch warning, payment disabled. Revert it.
 
-### 4. Fulfil / refund / withdraw (dashboard UI arrives in M4 — use cast)
+### 4. Dashboard (M4) — indexer, analytics, decrypt, manage
+
+Start the indexer (new terminal; anvil + launcher still running):
+
+```sh
+cd ~/projects/freeshop/apps/indexer
+FACTORY_ADDRESS=<factory address> pnpm dev     # API on :42069
+```
+
+In the launcher, as the **merchant**, verify:
+
+- [ ] `/stores` shows the aggregate panel: sales, unique customers, refunds, awaiting fulfilment,
+      gross·refunded revenue, and the 30-day bar chart (bars appear after your test purchases).
+- [ ] The store detail page shows per-store analytics and the orders list with 🔒 locked details.
+- [ ] **Unlock** → signature popup → order details decrypt in place and show the email/address
+      you entered as the buyer. (Plaintext exists only in this tab; reload re-locks it.)
+- [ ] **Mark fulfilled** on the order → tx popup → status badge flips to FULFILLED within ~15s
+      (indexer refresh); the storefront's `?order=1` page shows FULFILLED too.
+- [ ] Buy once more as the buyer, then **Refund** it from the dashboard → buyer balance goes up,
+      badge flips to REFUNDED.
+- [ ] **Withdraw** panel shows the correct withdrawable balance and the unfulfilled-orders
+      warning when a PAID order exists; withdrawing pays the merchant address and zeroes the
+      balance.
+- [ ] Kill the indexer process → analytics/orders sections show "indexer unavailable" errors but
+      store management (withdraw) and storefront files still work; restart it and they recover.
+
+### 4b. Fulfil / refund / withdraw without the dashboard (self-sovereignty check — use cast)
 
 ```sh
 STORE=<store address>
@@ -124,8 +154,6 @@ cast send $STORE "withdraw()" --rpc-url http://localhost:8545 \
 - [ ] Withdraw was sent by the **buyer's** key, but the **merchant** balance received the funds
       (withdraw always pays the immutable merchant — anyone may trigger it).
 
-*Known gap:* decrypting an order blob in the browser is exercised only by the automated e2e
-until the M4 dashboard ships its decrypt view.
 
 ---
 
