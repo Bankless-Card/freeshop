@@ -16,7 +16,8 @@ export default function Stores() {
   const explorer = chain.blockExplorers?.default?.url;
   const analytics = useMerchantAnalytics(me.data?.address);
 
-  const { data: stores, isPending } = useReadContract({
+  // The factory registry is the source of truth for "which stores are mine"...
+  const { data: chainStores, isPending: chainPending } = useReadContract({
     address: publicEnv.factoryAddress,
     abi: storefrontFactoryAbi,
     functionName: "getStores",
@@ -25,13 +26,13 @@ export default function Stores() {
   });
 
   const { data: facts } = useReadContracts({
-    allowFailure: false,
-    contracts: (stores ?? []).flatMap((store) => [
+    allowFailure: true,
+    contracts: (chainStores ?? []).flatMap((store) => [
       { address: store, abi: storeEscrowAbi, functionName: "price" } as const,
       { address: store, abi: storeEscrowAbi, functionName: "paymentToken" } as const,
       { address: store, abi: storeEscrowAbi, functionName: "orderCount" } as const,
     ]),
-    query: { enabled: !!stores && stores.length > 0 },
+    query: { enabled: !!chainStores && chainStores.length > 0 },
   });
 
   if (me.isPending) return <div className="boot">LOADING…</div>;
@@ -42,6 +43,18 @@ export default function Stores() {
       </div>
     );
   }
+
+  // ...but the list must never depend on a single source being up: merge the on-chain registry
+  // with the indexer's store table (which also carries per-store stats).
+  const indexed = analytics.data?.stores ?? [];
+  const statsFor = (address: string) => indexed.find((s) => s.address.toLowerCase() === address.toLowerCase());
+  const addresses: `0x${string}`[] = [...(chainStores ?? [])];
+  for (const s of indexed) {
+    if (!addresses.some((a) => a.toLowerCase() === s.address.toLowerCase())) addresses.push(s.address);
+  }
+
+  const chainUnavailable = !publicEnv.factoryAddress;
+  const stillLoading = addresses.length === 0 && (chainPending || analytics.isPending) && !chainUnavailable;
 
   return (
     <section className="reveal">
@@ -62,18 +75,40 @@ export default function Stores() {
         </div>
       ) : null}
 
-      {isPending && <div className="boot">READING FACTORY…</div>}
-      {stores && stores.length === 0 && (
+      <h2 className="section-title" style={{ marginTop: 36 }}>
+        <span className="index">LIST</span> Your stores
+      </h2>
+
+      {chainUnavailable && (
+        <div className="error-box">NEXT_PUBLIC_FACTORY_ADDRESS is not configured — cannot read the on-chain registry.</div>
+      )}
+      {stillLoading && <p className="mono" style={{ fontSize: 13 }}>Reading factory registry…</p>}
+      {!stillLoading && addresses.length === 0 && !chainUnavailable && (
         <div className="card card--flat">
           No stores yet. <Link href="/new">Launch your first</Link> — it takes about two minutes.
         </div>
       )}
 
-      {stores?.map((store, i) => {
-        const price = facts?.[i * 3] as bigint | undefined;
-        const token = facts?.[i * 3 + 1] as `0x${string}` | undefined;
-        const orders = facts?.[i * 3 + 2] as bigint | undefined;
+      {addresses.map((store) => {
+        const i = (chainStores ?? []).findIndex((a) => a.toLowerCase() === store.toLowerCase());
+        const chainPrice = i >= 0 ? (facts?.[i * 3]?.result as bigint | undefined) : undefined;
+        const chainToken = i >= 0 ? (facts?.[i * 3 + 1]?.result as `0x${string}` | undefined) : undefined;
+        const chainOrders = i >= 0 ? (facts?.[i * 3 + 2]?.result as bigint | undefined) : undefined;
+        const stats = statsFor(store);
+
+        const token = chainToken ?? stats?.paymentToken;
+        const price = chainPrice ?? (stats ? BigInt(stats.price) : undefined);
         const isEth = token === ETH_SENTINEL;
+        const priceLabel =
+          price !== undefined && token !== undefined
+            ? `${formatUnits(price, isEth ? 18 : 6)} ${isEth ? "ETH" : "USDC"}`
+            : "…";
+        const statsLabel = stats
+          ? `${stats.sales} sales · ${stats.uniqueBuyers} customer${stats.uniqueBuyers === 1 ? "" : "s"} · ${stats.refunds} refund${stats.refunds === 1 ? "" : "s"}`
+          : chainOrders !== undefined
+            ? `${chainOrders} orders`
+            : "";
+
         return (
           <div className="store-row" key={store}>
             <span>
@@ -84,16 +119,15 @@ export default function Stores() {
               ) : (
                 store
               )}
+              <br />
+              <span className="ink-soft">
+                {priceLabel}
+                {statsLabel ? ` · ${statsLabel}` : ""}
+              </span>
             </span>
-            <span>
-              {price !== undefined && token !== undefined
-                ? `${formatUnits(price, isEth ? 18 : 6)} ${isEth ? "ETH" : "USDC"} · ${orders ?? 0} orders`
-                : "…"}
-              {"  "}
-              <Link href={`/stores/${store}`} className="btn btn--ghost" style={{ marginLeft: 12 }}>
-                Storefront files
-              </Link>
-            </span>
+            <Link href={`/stores/${store}`} className="btn btn--ghost">
+              Manage store
+            </Link>
           </div>
         );
       })}
