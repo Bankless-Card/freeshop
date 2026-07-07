@@ -81,7 +81,9 @@ export default function StoreDetail() {
   const [error, setError] = useState<string>();
 
   useEffect(() => {
-    if (seeded || saved.data === undefined) return;
+    if (seeded) return;
+    // Seed once the fetch settles either way — an error must not strand the page on LOADING.
+    if (saved.data === undefined && !saved.isError) return;
     if (saved.data) {
       const cfg = saved.data.config;
       setName(cfg.product.name);
@@ -90,7 +92,7 @@ export default function StoreDetail() {
       setFields(cfg.fulfillment.fields);
     }
     setSeeded(true);
-  }, [saved.data, seeded]);
+  }, [saved.data, saved.isError, seeded]);
 
   if (!storeAddress) return <div className="boot">NOT A VALID STORE ADDRESS</div>;
   if (me.isPending || !seeded) return <div className="boot">LOADING…</div>;
@@ -186,9 +188,22 @@ export default function StoreDetail() {
         </div>
         <div>
           <dt>saved config</dt>
-          <dd>{saved.data ? "on file — edit below and re-download any time" : "none on file — rebuild it below"}</dd>
+          <dd>
+            {saved.isError
+              ? "could not be loaded"
+              : saved.data
+                ? "on file — edit below and re-download any time"
+                : "none on file — rebuild it below"}
+          </dd>
         </div>
       </dl>
+
+      {saved.isError && (
+        <div className="error-box">
+          Failed to load the saved config: {saved.error instanceof Error ? saved.error.message : "unknown error"}. The
+          rebuild form below still works.
+        </div>
+      )}
 
       {notOwner && (
         <div className="note note--warn" style={{ marginTop: 20 }}>
