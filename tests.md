@@ -75,7 +75,14 @@ merchant account verify:
       row displays.)
 - [ ] Launch → 0.01 ETH transaction popup → **Launched** stamp + store address.
 - [ ] Download **storefront.zip** and **store.config.json**.
-- [ ] `/stores` lists the store with its price and `0 orders`.
+- [ ] `/stores` lists the store with its price and `0 orders`; its **Storefront files** link opens
+      a page where the saved config is on file and the zip can be **re-downloaded** (configs are
+      saved automatically at launch). Edit the description there, re-download, and confirm the
+      change is in the zip's `store.config.json`.
+- [ ] Recovery path: for a store with **no** saved config (e.g. launched before this feature),
+      the same page rebuilds it — the form must match the on-chain commitment exactly, and the
+      match/mismatch indicator gates the download. Verify a deliberately wrong field shows the
+      mismatch warning and disables the buttons.
 - [ ] `/account`: update email works; **Delete account** signs you out; sign back in → store still listed (it's on-chain), onboarding asks for email again.
 
 ### 3. Storefront — buyer journey

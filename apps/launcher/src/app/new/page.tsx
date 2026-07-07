@@ -16,6 +16,7 @@ import { paymentAssets, type PaymentAsset } from "@/lib/assets";
 import { launcherChain } from "@/lib/chains";
 import { publicEnv } from "@/lib/env";
 import { useAuth } from "@/lib/useAuth";
+import { SchemaBuilder, fieldsAreValid } from "@/components/SchemaBuilder";
 
 const STEPS = ["product", "order form", "encryption key", "review", "launched"] as const;
 type Step = 0 | 1 | 2 | 3 | 4;
@@ -223,10 +224,6 @@ function ProductStep({
 
 /* ——— step 2: fulfillment schema builder ——— */
 
-function slugify(label: string): string {
-  return label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
-}
-
 function FormStep({
   draft,
   patch,
@@ -238,16 +235,7 @@ function FormStep({
   onBack: () => void;
   onNext: () => void;
 }) {
-  const fields = draft.fields;
-  const setFields = (next: FulfillmentField[]) => patch({ fields: next });
-  const update = (i: number, partial: Partial<FulfillmentField>) =>
-    setFields(fields.map((f, j) => (j === i ? { ...f, ...partial } : f)));
-
-  const names = fields.map((f) => f.name);
-  const valid =
-    fields.length > 0 &&
-    fields.every((f) => f.name && f.label) &&
-    new Set(names).size === names.length;
+  const valid = fieldsAreValid(draft.fields);
 
   return (
     <div className="card reveal">
@@ -260,64 +248,7 @@ function FormStep({
         rides inside the payment transaction, and bytes cost gas.
       </p>
 
-      {fields.map((field, i) => (
-        <div className="schema-field" key={i}>
-          <div className="field">
-            <label className="eyebrow">Label</label>
-            <input
-              value={field.label}
-              onChange={(e) =>
-                update(i, {
-                  label: e.target.value,
-                  name: field.name === slugify(field.label) || field.name === "" ? slugify(e.target.value) : field.name,
-                })
-              }
-              placeholder="Shipping address"
-            />
-          </div>
-          <div className="field">
-            <label className="eyebrow">Field key</label>
-            <input value={field.name} onChange={(e) => update(i, { name: slugify(e.target.value) })} />
-          </div>
-          <div className="field">
-            <label className="eyebrow">Type</label>
-            <select
-              value={field.type}
-              onChange={(e) => update(i, { type: e.target.value as FulfillmentField["type"] })}
-            >
-              <option value="text">text</option>
-              <option value="email">email</option>
-              <option value="textarea">textarea</option>
-            </select>
-          </div>
-          <label className="check" style={{ margin: 0 }}>
-            <input type="checkbox" checked={field.required} onChange={(e) => update(i, { required: e.target.checked })} />
-            <span className="eyebrow">req</span>
-          </label>
-          <button
-            type="button"
-            className="icon-btn"
-            title="Remove field"
-            onClick={() => setFields(fields.filter((_, j) => j !== i))}
-          >
-            ✕
-          </button>
-        </div>
-      ))}
-
-      <button
-        type="button"
-        className="btn btn--ghost"
-        style={{ marginTop: 16 }}
-        onClick={() => setFields([...fields, { name: "", label: "", type: "text", required: false }])}
-      >
-        + Add field
-      </button>
-      {!valid && fields.length > 0 && (
-        <p className="field__error" style={{ marginTop: 10 }}>
-          Every field needs a label and a unique key.
-        </p>
-      )}
+      <SchemaBuilder fields={draft.fields} onChange={(fields) => patch({ fields })} />
 
       <div className="wizard-nav">
         <button type="button" className="btn" onClick={onBack}>
@@ -520,6 +451,14 @@ function ReviewStep({
         },
         fulfillment: { fields: draft.fields },
       };
+      // Persist server-side so the package can be re-downloaded from /stores later.
+      // Best-effort: the launch already succeeded on-chain, so never fail it over this.
+      await fetch(`/api/stores/${deployed.args.store}/config`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(config),
+      }).catch(() => {});
+
       onLaunched({ storeAddress: deployed.args.store, txHash, config });
     } catch (err) {
       if (err instanceof Error && err.name === "WaitForTransactionReceiptTimeoutError") {

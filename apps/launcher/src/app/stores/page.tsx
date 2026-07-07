@@ -77,6 +77,10 @@ export default function Stores() {
               {price !== undefined && token !== undefined
                 ? `${formatUnits(price, isEth ? 18 : 6)} ${isEth ? "ETH" : "USDC"} · ${orders ?? 0} orders`
                 : "…"}
+              {"  "}
+              <Link href={`/stores/${store}`} className="btn btn--ghost" style={{ marginLeft: 12 }}>
+                Storefront files
+              </Link>
             </span>
           </div>
         );

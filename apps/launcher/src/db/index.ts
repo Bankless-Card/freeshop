@@ -12,6 +12,13 @@ const BOOTSTRAP_SQL = `
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now()
   );
+  CREATE TABLE IF NOT EXISTS store_configs (
+    store_address    text PRIMARY KEY,
+    merchant_address text NOT NULL,
+    config           text NOT NULL,
+    created_at       timestamptz NOT NULL DEFAULT now(),
+    updated_at       timestamptz NOT NULL DEFAULT now()
+  );
 `;
 
 // Singleton across HMR / route invocations.

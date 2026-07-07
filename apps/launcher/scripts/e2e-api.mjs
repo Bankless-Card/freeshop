@@ -6,8 +6,9 @@
  */
 import { spawn } from "node:child_process";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { unzipSync, strFromU8 } from "fflate";
-import { createWalletClient, http } from "viem";
+import { createPublicClient, createTestClient, createWalletClient, http, parseEther, parseEventLogs } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { anvil } from "viem/chains";
 import { createSiweMessage } from "viem/siwe";
@@ -175,6 +176,99 @@ await api("/api/auth/nonce");
     body: JSON.stringify({ ...config, storeAddress: "nope" }),
   });
   assert.equal(invalid.status, 400, "invalid config rejected");
+}
+
+// ——— store-config persistence (deploy a real store owned by the session merchant) ———
+{
+  const rpc = `http://127.0.0.1:${ANVIL_PORT}`;
+  const account = privateKeyToAccount(MERCHANT_PK);
+  const publicClient = createPublicClient({ chain: anvil, transport: http(rpc) });
+  const testClient = createTestClient({ mode: "anvil", chain: anvil, transport: http(rpc) });
+  const wallet = createWalletClient({ account, chain: anvil, transport: http(rpc) });
+  await testClient.setBalance({ address: account.address, value: parseEther("1") });
+
+  const artifact = (name) =>
+    JSON.parse(readFileSync(new URL(`../../../contracts/out/${name}.sol/${name}.json`, import.meta.url), "utf8"));
+  const factoryArtifact = artifact("StorefrontFactory");
+
+  const deployHash = await wallet.deployContract({
+    abi: factoryArtifact.abi,
+    bytecode: factoryArtifact.bytecode.object,
+    args: [account.address, account.address, 0n],
+  });
+  const factory = (await publicClient.waitForTransactionReceipt({ hash: deployHash })).contractAddress;
+
+  const storeHash = await wallet.writeContract({
+    address: factory,
+    abi: factoryArtifact.abi,
+    functionName: "deployStore",
+    args: [
+      account.address,
+      "0x0000000000000000000000000000000000000000",
+      parseEther("0.01"),
+      `0x${"11".repeat(32)}`,
+      `0x${"22".repeat(32)}`,
+    ],
+  });
+  const storeReceipt = await publicClient.waitForTransactionReceipt({ hash: storeHash });
+  const [deployed] = parseEventLogs({ abi: factoryArtifact.abi, eventName: "StoreDeployed", logs: storeReceipt.logs });
+  const store = deployed.args.store;
+
+  const config = {
+    version: 1,
+    chainId: 31337,
+    storeAddress: store,
+    product: { name: "Persisted Product", description: "", images: ["./product.svg"] },
+    payment: {
+      token: "0x0000000000000000000000000000000000000000",
+      symbol: "ETH",
+      decimals: 18,
+      price: "10000000000000000",
+    },
+    fulfillment: { fields: [{ name: "email", label: "Email", type: "email", required: true }] },
+  };
+
+  const jsonInit = (method, body) => ({
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  assert.equal((await api(`/api/stores/${store}/config`)).status, 404, "no config saved yet");
+  assert.equal((await api(`/api/stores/${store}/config`, jsonInit("PUT", config))).status, 200, "config saved");
+  const fetched = await (await api(`/api/stores/${store}/config`)).json();
+  assert.equal(fetched.config.product.name, "Persisted Product", "config round-trips");
+
+  const mismatched = await api(
+    `/api/stores/${store}/config`,
+    jsonInit("PUT", { ...config, storeAddress: "0x1111111111111111111111111111111111111111" }),
+  );
+  assert.equal(mismatched.status, 400, "storeAddress/URL mismatch rejected");
+
+  // A store whose on-chain merchant is someone else must be inaccessible to this session.
+  const otherStoreHash = await wallet.writeContract({
+    address: factory,
+    abi: factoryArtifact.abi,
+    functionName: "deployStore",
+    args: [
+      "0x2222222222222222222222222222222222222222",
+      "0x0000000000000000000000000000000000000000",
+      parseEther("0.01"),
+      `0x${"11".repeat(32)}`,
+      `0x${"22".repeat(32)}`,
+    ],
+  });
+  const otherReceipt = await publicClient.waitForTransactionReceipt({ hash: otherStoreHash });
+  const [otherDeployed] = parseEventLogs({
+    abi: factoryArtifact.abi,
+    eventName: "StoreDeployed",
+    logs: otherReceipt.logs,
+  });
+  assert.equal(
+    (await api(`/api/stores/${otherDeployed.args.store}/config`)).status,
+    403,
+    "someone else's store is forbidden",
+  );
 }
 
 // ——— account deletion ———
