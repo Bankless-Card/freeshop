@@ -1,6 +1,9 @@
 # deps
 node_modules/
 
+# generated release artifacts
+build/
+
 # next.js launcher
 apps/launcher/.next/
 apps/launcher/.data/
@@ -8,6 +11,7 @@ apps/launcher/template-dist/
 
 # ponder indexer
 apps/indexer/.ponder/
+apps/indexer/.ponder-e2e/
 apps/indexer/generated/
 
 # vite

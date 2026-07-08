@@ -151,7 +151,9 @@ await send(merchant.writeContract({ address: store1, abi: escrowAbi, functionNam
 await send(merchant.writeContract({ address: store1, abi: escrowAbi, functionName: "withdraw", args: [] }));
 
 // ——— run ponder over the seeded chain ———
-rmSync(new URL("../.ponder", import.meta.url), { recursive: true, force: true });
+// Scratch database so this never collides with a dev indexer using .ponder/.
+const scratchDb = new URL("../.ponder-e2e", import.meta.url).pathname;
+rmSync(scratchDb, { recursive: true, force: true });
 start("pnpm", ["exec", "ponder", "dev", "--port", String(PONDER_PORT), "--log-level", "warn"], {
   cwd: new URL("..", import.meta.url).pathname,
   stdio: process.env.DEBUG ? "inherit" : "ignore",
@@ -161,6 +163,8 @@ start("pnpm", ["exec", "ponder", "dev", "--port", String(PONDER_PORT), "--log-le
     INDEXER_CHAIN_ID: "31337",
     FACTORY_ADDRESS: factoryAddress,
     START_BLOCK: "0",
+    PONDER_PGLITE_DIR: scratchDb,
+    DATABASE_URL: "",
   },
 });
 

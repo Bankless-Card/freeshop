@@ -95,13 +95,20 @@ Definition of done: merchant connects, gives email, defines product + schema, pa
 
 Definition of done: PRD §9 dashboard bullets all demonstrable on testnet. **Demonstrated on anvil via e2e; testnet pass still gated on the Sepolia deploy (M1 open item).**
 
-## M5 — Hardening (not started; mostly human tasks)
+## M5 — Hardening (in progress 2026-07-07; owner-input items ordered last)
 
-- [ ] Independent audit (candidate firms per PRD: OpenZeppelin, Trail of Bits, Sherlock, Cyfrin, Spearbit — owner selects/contracts)
-- [ ] Address audit findings; re-run Slither/Aderyn
+Done without owner input:
+- [x] **Audit-prep package** (`docs/audit-package.md`): scope + commit, trust model, 8 protocol properties to verify, deliberate design decisions vs. accepted risks, off-chain crypto context, focus areas, repro commands — ready to send to firms for quotes
+- [x] **Template extraction** (`scripts/extract-template.mjs` → `build/storefront-template/`): standalone storefront repo with `@freeshop/shared` vendored via `file:` dep (no import rewrites); verified with a fresh `pnpm install && pnpm build` outside the workspace. Owner steps remain: create public GitHub repo, push, enable "Template repository", set `NEXT_PUBLIC_TEMPLATE_REPO_URL`
+- [x] **Regression sweep (2026-07-07)**: 58 forge tests green, 100% coverage held, Slither 0 findings, shared 17 vitest green, launcher API e2e green, indexer e2e green (now on a scratch `.ponder-e2e` DB so it can't clobber a running dev indexer — `PONDER_PGLITE_DIR` override added to ponder.config.ts)
+- [ ] Current-Aderyn rerun (cargo git build in flight; cargo-crates version is stale 0.1.9)
+
+Blocked on owner:
+- [ ] **Sepolia deploy + Etherscan verify** — needs funded deployer key, `SEPOLIA_RPC_URL`, `ETHERSCAN_API_KEY` (command in `contracts/README.md`); unlocks the testnet passes of M2–M4 definitions of done and the USDC checkout path
+- [ ] **Independent audit** — owner selects/engages a firm (send them `docs/audit-package.md`); then address findings + re-run analyzers on the freeze commit
 - [ ] Testnet dry-runs with small real amounts, end to end
 - [ ] Mainnet deploy of factory; Etherscan verification (green check)
-- [ ] Storefront template extracted to public template repo
+- [ ] Publish the extracted template repo (above) + point the launcher at it
 
 ## v2 backlog / out of scope for v1 — do not build
 

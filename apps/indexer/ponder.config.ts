@@ -16,6 +16,11 @@ const startBlock = Number(process.env.START_BLOCK ?? 0);
 if (!factoryAddress) throw new Error("FACTORY_ADDRESS is required");
 
 export default createConfig({
+  // DATABASE_URL → Postgres (production). Otherwise PGlite, with the directory overridable so
+  // tests can run against a scratch database without touching a dev instance's .ponder/.
+  database: process.env.DATABASE_URL
+    ? { kind: "postgres", connectionString: process.env.DATABASE_URL }
+    : { kind: "pglite", directory: process.env.PONDER_PGLITE_DIR ?? ".ponder/pglite" },
   chains: {
     target: { id: chainId, rpc },
   },
