@@ -189,6 +189,10 @@ cast send $STORE "withdraw()" --rpc-url http://localhost:8545 \
   (symbol), `0x313ce567` (decimals), `0x70a08231` (balanceOf) — that's MetaMask probing the
   transaction target to see if it's an ERC-20 so it can prettify the confirmation. The factory
   and stores aren't tokens, so the probes revert. Harmless; ignore.
+- **Indexer loops `ExitStatus: Program terminated with exit(1)` with "Failed database query"
+  retries** — the embedded PGlite database under `apps/indexer/.ponder/` is corrupted (e.g. a
+  partial delete or an interrupted run). It is disposable derived state: stop the indexer,
+  `rm -rf apps/indexer/.ponder`, start it again — it re-syncs everything from the chain.
 - **Anvil not running / wrong port** — the launcher and storefront default to
   `http://127.0.0.1:8545`; a dead RPC shows as "could not read the factory contract" (launcher)
   or the RPC warning banner (storefront).
