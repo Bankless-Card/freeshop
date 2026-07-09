@@ -1,4 +1,4 @@
-# Testing procedure (M1–M3)
+# Testing procedure (M1–M4)
 
 Two layers: the automated suites (run in minutes, prove the protocol), and a manual walkthrough
 for everything a wallet extension touches — which automation cannot cover in this repo yet.
@@ -45,6 +45,10 @@ keys — they must never live next to real funds.
 3. Import **buyer** account #1:
    `0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d`
 
+You will end up with **three long-running terminals**: ① anvil (the chain), ② the indexer
+(feeds the launcher's analytics/orders), ③ the launcher. Steps 1–3 below start them in that
+order — the indexer needs the chain up, and the launcher's dashboard needs the indexer.
+
 ### 1. Chain + factory
 
 ```sh
@@ -57,11 +61,25 @@ forge script script/Deploy.s.sol --rpc-url http://localhost:8545 --broadcast \
   --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 ```
 
-Note the printed `StorefrontFactory:` address.
+Note the printed `StorefrontFactory:` address — steps 2 and 3 both need it.
 
-### 2. Launcher — merchant journey
+### 2. Indexer
 
 ```sh
+# terminal 2, leave running:
+cd ~/projects/freeshop/apps/indexer
+FACTORY_ADDRESS=<factory address> pnpm dev
+```
+
+Check its startup banner says `Live at http://localhost:42069`. Without the indexer the
+launcher still starts, but every analytics/orders panel shows "indexer unreachable" — so run it
+before the launcher. (It exits immediately if `FACTORY_ADDRESS` is missing; if you restart
+anvil on a fresh chain, restart the indexer too and wipe `apps/indexer/.ponder/`.)
+
+### 3. Launcher — merchant journey
+
+```sh
+# terminal 3, leave running:
 cd ~/projects/freeshop/apps/launcher
 NEXT_PUBLIC_FACTORY_ADDRESS=<factory address> pnpm dev
 ```
@@ -81,7 +99,7 @@ merchant account verify:
       row displays.)
 - [ ] Launch → 0.01 ETH transaction popup → **Launched** stamp + store address.
 - [ ] Download **storefront.zip** and **store.config.json**.
-- [ ] `/stores` lists the store with its price and `0 orders`; its **Storefront files** link opens
+- [ ] `/stores` lists the store with its price and `0 orders`; its **Manage store** link opens
       a page where the saved config is on file and the zip can be **re-downloaded** (configs are
       saved automatically at launch). Edit the description there, re-download, and confirm the
       change is in the zip's `store.config.json`.
@@ -91,7 +109,7 @@ merchant account verify:
       mismatch warning and disables the buttons.
 - [ ] `/account`: update email works; **Delete account** signs you out; sign back in → store still listed (it's on-chain), onboarding asks for email again.
 
-### 3. Storefront — buyer journey
+### 4. Storefront — buyer journey
 
 ```sh
 unzip storefront.zip -d /tmp/mystore
@@ -107,16 +125,9 @@ At `http://localhost:8080`, as the **buyer** account verify:
 - [ ] Switch MetaMask to another network → pay button becomes "Switch wallet to Anvil"; clicking it switches back.
 - [ ] Tamper check: edit a field's `label` in `/tmp/mystore/store.config.json`, reload → red schema-mismatch warning, payment disabled. Revert it.
 
-### 4. Dashboard (M4) — indexer, analytics, decrypt, manage
+### 5. Dashboard (M4) — analytics, decrypt, manage
 
-Start the indexer (new terminal; anvil + launcher still running):
-
-```sh
-cd ~/projects/freeshop/apps/indexer
-FACTORY_ADDRESS=<factory address> pnpm dev     # API on :42069
-```
-
-In the launcher, as the **merchant**, verify:
+The indexer from step 2 powers everything here. In the launcher, as the **merchant**, verify:
 
 - [ ] `/stores` shows the aggregate panel: sales, unique customers, refunds, awaiting fulfilment,
       gross·refunded revenue, and the 30-day bar chart (bars appear after your test purchases).
@@ -133,7 +144,7 @@ In the launcher, as the **merchant**, verify:
 - [ ] Kill the indexer process → analytics/orders sections show "indexer unavailable" errors but
       store management (withdraw) and storefront files still work; restart it and they recover.
 
-### 4b. Fulfil / refund / withdraw without the dashboard (self-sovereignty check — use cast)
+### 5b. Fulfil / refund / withdraw without the dashboard (self-sovereignty check — use cast)
 
 ```sh
 STORE=<store address>
@@ -207,7 +218,9 @@ Prereqs: funded Sepolia deployer key, `SEPOLIA_RPC_URL`, `ETHERSCAN_API_KEY`.
    NEXT_PUBLIC_USDC_ADDRESS=0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238 \
    pnpm build && pnpm start
    ```
-3. Repeat Part 1 steps 2–4 on Sepolia with a real (test-fund-only) wallet.
+3. Repeat Part 1 steps 2–5 on Sepolia with a real (test-fund-only) wallet (indexer env:
+   `INDEXER_CHAIN_ID=11155111`, `INDEXER_RPC_URL=$SEPOLIA_RPC_URL`, plus the factory's
+   deploy block as `START_BLOCK` so it skips empty history).
 - [ ] **USDC store path** (impossible on plain anvil): create a USDC store; buyer checkout shows
       the two-step notice and pops **approve** then **pay**; refund returns USDC.
 - [ ] Explorer links on storefront receipts and launcher pages resolve to Sepolia Etherscan.
