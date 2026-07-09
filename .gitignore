@@ -38,3 +38,6 @@ contracts/aderyn-report.md
 
 # os / editor
 .DS_Store
+
+# claude harness state
+.claude/worktrees/
