@@ -9,9 +9,197 @@
       content="Self-hosted storefront. Payment held in an on-chain escrow contract; order details encrypted in your browser."
     />
     <title>Storefront</title>
+    <!--
+      THIS SITE IS YOURS TO EDIT.
+
+      · styles.css        — every color, font, and spacing value (design tokens at the top)
+      · store.config.json — product name, description, images, form fields*
+      · this file         — the page structure: reorder or delete whole <section>s freely,
+                            add your own HTML anywhere, edit any text that isn't filled by a
+                            data-slot attribute.
+
+      Rules of the road:
+      · Elements with id="…" or data-slot="…" are how the app finds things — keep those
+        attributes on elements you keep. Delete a whole section and everything else still works.
+      · <template> tags define the repeating bits (form fields, progress lines). Edit their
+        insides, keep their data-slot attributes.
+      · *Changing fulfillment "fields" in store.config.json disables checkout on purpose:
+        the form is committed on-chain at store creation and buyers verify it.
+    -->
+    <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <div id="root">
+      <!-- Shown while store.config.json loads, or with an error if it can't. -->
+      <div id="boot" class="boot">LOADING STORE…</div>
+
+      <div id="store" hidden>
+        <!-- ———————————————————————— masthead ———————————————————————— -->
+        <header class="masthead reveal">
+          <div class="masthead__brand">
+            <span class="eyebrow">Escrow storefront</span>
+            <span class="masthead__chain" data-slot="chain-line"></span>
+          </div>
+          <button id="wallet-btn" class="btn" type="button" hidden></button>
+        </header>
+
+        <!-- ———————————————————————— product ———————————————————————— -->
+        <section class="product reveal" style="--i: 1">
+          <h1 class="product__name" data-slot="product-name"></h1>
+          <div class="product__priceline">
+            <span class="product__price" data-slot="price"></span>
+            <span class="product__meta" data-slot="sold-count"></span>
+          </div>
+          <figure class="product__figure" data-slot="product-figure">
+            <img data-slot="product-image" alt="" />
+          </figure>
+          <p class="product__description" data-slot="product-description"></p>
+
+          <div id="rpc-warning" class="warn-banner" hidden>
+            COULD NOT REACH THE STORE CONTRACT — displayed details come from the config file and
+            payment is disabled until the RPC recovers.
+          </div>
+          <div id="schema-warning" class="warn-banner" hidden>
+            WARNING: this form does not match the schema the merchant registered on-chain. Do not
+            submit sensitive details — contact the merchant.
+          </div>
+        </section>
+
+        <hr class="rule-dashed" />
+
+        <!-- ———————————————————————— checkout ———————————————————————— -->
+        <section id="checkout" class="section reveal" style="--i: 2">
+          <h2 class="section__title"><span class="section__index">01</span> Your details</h2>
+
+          <form id="order-form" novalidate>
+            <div id="order-fields"><!-- inputs are generated here from store.config.json --></div>
+
+            <div class="encrypt-note">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <rect x="4" y="10" width="16" height="11" stroke="currentColor" stroke-width="2.4" />
+                <path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="2.4" />
+              </svg>
+              <span>
+                These details are encrypted <em>in your browser</em> with the merchant's public
+                key before anything is sent. They ride along with your payment; no server ever
+                sees them.
+              </span>
+            </div>
+
+            <h2 class="section__title"><span class="section__index">02</span> Payment</h2>
+            <button id="pay-btn" class="btn btn--ink" type="submit"></button>
+            <p id="erc20-note" class="receipt__hint" hidden>
+              Paying with a token takes two wallet confirmations: an approval, then the payment
+              itself.
+            </p>
+            <ul id="progress" class="progress" hidden></ul>
+            <div id="checkout-error" class="error-box" hidden></div>
+          </form>
+
+          <!-- Confirmation, revealed after a successful payment. -->
+          <div id="receipt" class="receipt" hidden>
+            <p class="eyebrow">Order no.</p>
+            <p class="receipt__ordernum" data-slot="receipt-ordernum"></p>
+            <span class="stamp stamp--paid">PAID</span>
+            <dl style="margin-top: 24px">
+              <div class="receipt__row">
+                <dt>amount</dt>
+                <dd data-slot="receipt-amount"></dd>
+              </div>
+              <div class="receipt__row">
+                <dt>transaction</dt>
+                <dd><a data-slot="receipt-tx" target="_blank" rel="noreferrer"></a></dd>
+              </div>
+              <div class="receipt__row">
+                <dt>escrow</dt>
+                <dd data-slot="receipt-escrow"></dd>
+              </div>
+            </dl>
+            <p class="receipt__hint">
+              Save this link to check your order later:
+              <a data-slot="receipt-order-link"></a>
+              <br />
+              Your details were encrypted in this browser — only the merchant can read them.
+            </p>
+          </div>
+        </section>
+
+        <hr class="rule-dashed" />
+
+        <!-- ———————————————————————— order status lookup ———————————————————————— -->
+        <section id="lookup" class="section reveal" style="--i: 3">
+          <h2 class="section__title"><span class="section__index">03</span> Check an order</h2>
+          <form id="lookup-form" class="lookup__bar">
+            <div class="field">
+              <label class="eyebrow" for="lookup-input">Order no.</label>
+              <input id="lookup-input" inputmode="numeric" placeholder="e.g. 1" />
+            </div>
+            <button id="lookup-btn" class="btn" type="submit">Look up</button>
+          </form>
+
+          <div class="lookup__result">
+            <p id="lookup-missing" class="mono" style="font-size: 13px" hidden></p>
+            <div id="lookup-error" class="error-box" hidden>
+              Could not read the contract — try again shortly.
+            </div>
+            <div id="lookup-receipt" class="receipt" hidden>
+              <p class="eyebrow">Order no.</p>
+              <p class="receipt__ordernum" data-slot="lookup-ordernum"></p>
+              <span data-slot="lookup-stamp" class="stamp"></span>
+              <dl style="margin-top: 24px">
+                <div class="receipt__row">
+                  <dt>buyer</dt>
+                  <dd data-slot="lookup-buyer"></dd>
+                </div>
+                <div class="receipt__row">
+                  <dt>amount</dt>
+                  <dd data-slot="lookup-amount"></dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+
+          <!-- Appears only when the connected wallet has an unclaimed refund waiting. -->
+          <div id="refund-banner" class="refund-banner" hidden>
+            <span>A refund of <strong data-slot="refund-amount"></strong> is waiting for this wallet.</span>
+            <button id="claim-btn" class="btn" type="button">Claim refund</button>
+          </div>
+          <div id="refund-error" class="error-box" hidden></div>
+        </section>
+
+        <!-- ———————————————————————— colophon ———————————————————————— -->
+        <footer class="colophon">
+          <span>escrow contract: <a data-slot="contract-link" target="_blank" rel="noreferrer"></a></span>
+          <span data-slot="colophon-note"></span>
+        </footer>
+      </div>
+
+      <!-- ————————— templates for the repeating, generated pieces ————————— -->
+
+      <!-- One text/email form field. The app sets the label, input type, and name. -->
+      <template id="tpl-field-text">
+        <div class="field">
+          <label class="eyebrow"></label>
+          <input />
+          <p class="field__error" hidden></p>
+        </div>
+      </template>
+
+      <!-- One multi-line form field. -->
+      <template id="tpl-field-textarea">
+        <div class="field">
+          <label class="eyebrow"></label>
+          <textarea></textarea>
+          <p class="field__error" hidden></p>
+        </div>
+      </template>
+
+      <!-- One line of checkout progress ("Encrypting…", "Sending payment…"). -->
+      <template id="tpl-progress-line">
+        <li><span data-slot="label"></span></li>
+      </template>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

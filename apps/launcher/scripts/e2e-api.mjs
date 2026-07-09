@@ -170,6 +170,14 @@ await api("/api/auth/nonce");
   const packaged = JSON.parse(strFromU8(files["store.config.json"]));
   assert.equal(packaged.product.name, "E2E Product", "zip contains the merchant's config");
 
+  // Hand-editability contract: real markup, plain stylesheet, readable app, explanatory README.
+  assert.ok(strFromU8(files["index.html"]).includes('data-slot="product-name"'), "index.html carries real markup");
+  assert.ok(files["styles.css"], "zip contains editable styles.css");
+  assert.ok(files["assets/app.js"], "zip contains stable-named app.js");
+  const readme = strFromU8(files["README.txt"]);
+  assert.ok(readme.includes(config.storeAddress), "README names the store contract");
+  assert.ok(readme.includes("Do NOT edit"), "README carries the fulfillment-fields warning");
+
   const invalid = await api("/api/storefront-package", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

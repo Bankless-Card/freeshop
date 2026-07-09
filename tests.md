@@ -124,6 +124,12 @@ At `http://localhost:8080`, as the **buyer** account verify:
 - [ ] Open `?order=1` in a fresh tab — status shows **without** connecting a wallet.
 - [ ] Switch MetaMask to another network → pay button becomes "Switch wallet to Anvil"; clicking it switches back.
 - [ ] Tamper check: edit a field's `label` in `/tmp/mystore/store.config.json`, reload → red schema-mismatch warning, payment disabled. Revert it.
+- [ ] Editability — look & feel: open `/tmp/mystore/styles.css`, change `--verdigris` at the top
+      (e.g. to `#7c3aed`), reload → accents/stamps/buttons recolor everywhere.
+- [ ] Editability — structure: open `/tmp/mystore/index.html` and read `README.txt` next to it;
+      move the "Check an order" `<section id="lookup">` above the checkout section, reload →
+      page reorders and everything still works. Then delete that whole section, reload →
+      lookup is gone, buying still works.
 
 ### 5. Dashboard (M4) — analytics, decrypt, manage
 

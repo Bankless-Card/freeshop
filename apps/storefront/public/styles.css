@@ -28,6 +28,11 @@
   box-sizing: border-box;
 }
 
+/* The app shows/hides blocks via the `hidden` attribute; it must beat any display rule. */
+[hidden] {
+  display: none !important;
+}
+
 html {
   background: var(--paper);
 }

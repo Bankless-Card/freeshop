@@ -46,6 +46,16 @@ this file tracks *execution* state per milestone.
 - [x] E2E protocol test on anvil (`packages/shared/test/e2e-anvil.test.ts`): deploy factory+store with signature-derived pubkey → encrypted pay → merchant decrypts from log → fulfil → refund → withdraw. 17/17 vitest tests green; production build passes; built site serves config/assets correctly
 - Design: "on-chain receipt" system — paper/ink palette, Fraunces + IBM Plex Mono/Sans, rubber-stamp statuses, hard shadows, staggered reveal (reduced-motion safe)
 
+**Rewritten 2026-07-09 (owner request — hand-editable storefront):** the storefront is now
+**vanilla TypeScript + viem, no React/wagmi**. All markup lives in `index.html` (sections
+reorderable/deletable; repeated bits as `<template>` tags), the design system ships as a plain
+runtime `styles.css`, JS builds unminified to a stable `assets/app.js`, every zip gets a
+generated `README.txt`, and code binds to `id`/`data-slot` attributes with null-tolerance
+(deleting a section disables only that feature). Guarded by 8 vitest+happy-dom DOM tests
+against the real index.html; wallet layer is a ~100-line injected-provider module
+(MetaMask-class, same scope as the old wagmi `injected()` connector). Bundle: 802 kB raw /
+176 kB gzip (was 582/178 minified — same over the wire, readable at rest).
+
 ### M2 open items
 - **Manual browser QA with a real wallet extension** (MetaMask on anvil/Sepolia): connect, pay, status, claim — no browser automation available in this environment; protocol path is covered by the anvil e2e test.
 - **Template extraction dependency**: the storefront imports `@freeshop/shared` via `workspace:*`. Before extracting to a standalone template repo (M5), either publish `@freeshop/shared` to npm or vendor it into the template. The shipped Pages workflow assumes a standalone repo.
