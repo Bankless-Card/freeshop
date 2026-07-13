@@ -50,13 +50,17 @@ export default function Home() {
   return (
     <>
       <section className="hero reveal">
-        <p className="eyebrow">Decentralized storefront launcher</p>
-        <h1>Sell one thing. Own the whole stack.</h1>
+        <p className="eyebrow">Sovereign e-commerce </p>
+        <h1>Own your storefront.  Own your business.</h1>
         <p>
-          Pay a one-time fee to deploy your own escrow contract on Ethereum, and walk away with a
-          free static storefront you host anywhere. Customers pay in ETH or USDC; their order
-          details are encrypted to <em>your</em> key. No processors, no subscriptions, no server —
-          and we are never between you and your money.
+          Most online business use 2-3 intermediaries to get paid (ex. Shopify, Etsy, Stripe, Paypal).
+          They charge monthly, with fees on every transaction.  
+          They close storefonts and hold funds without warning and without recourse.  
+        </p>
+        <p>
+          Freeshop charges a one-time fee to create a storefront owned by <em>you</em> and no one else.
+          We launch a smart contract on Ethereum so you can accept ETH and USDC direction (no middleman).
+          We let you download the code which you can edit yourself and host for free (no monthly fees).
         </p>
       </section>
 
@@ -81,10 +85,10 @@ export default function Home() {
         ) : (
           <>
             <h2 className="section-title">
-              <span className="index">01</span> Sign in with your wallet
+              <span className="index">01</span> Sign in with your Ethereum wallet
             </h2>
             <p style={{ marginTop: 0 }}>
-              Your wallet address is your account — no password. Signing costs nothing and sends
+              Your wallet is your account — no password needed. Signing costs nothing and sends
               no transaction.
             </p>
             {!isConnected ? (
