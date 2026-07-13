@@ -2,13 +2,41 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useAccount, useConnect } from "wagmi";
 import { useAuth } from "@/lib/useAuth";
+import { useHasWallet } from "@/lib/useHasWallet";
+
+/** Shown when no wallet is detected — e.g. plain mobile Safari/Chrome. */
+function MobileWalletHint() {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="note">
+      <span>
+        On a phone? Open this page inside your wallet app&apos;s built-in browser (in MetaMask:
+        menu → Browser) and connect from there.{" "}
+        <button
+          type="button"
+          className="btn btn--ghost"
+          onClick={() => {
+            void navigator.clipboard.writeText(location.href).then(() => {
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            });
+          }}
+        >
+          {copied ? "Copied" : "Copy link"}
+        </button>
+      </span>
+    </div>
+  );
+}
 
 export default function Home() {
   const router = useRouter();
   const { isConnected } = useAccount();
   const { connect, connectors, isPending: isConnecting } = useConnect();
+  const hasWallet = useHasWallet();
   const { me, signIn } = useAuth();
 
   // Navigate onward only as the result of the sign-in action itself — a signed-in visitor to
@@ -63,10 +91,10 @@ export default function Home() {
               <button
                 type="button"
                 className="btn btn--ink"
-                disabled={isConnecting || connectors.length === 0}
+                disabled={isConnecting || hasWallet === false}
                 onClick={() => connect({ connector: connectors[0] })}
               >
-                {connectors.length === 0
+                {hasWallet === false
                   ? "No wallet detected — install one first"
                   : isConnecting
                     ? "Connecting…"
@@ -82,6 +110,7 @@ export default function Home() {
                 {signIn.isPending ? "Check your wallet…" : "Sign in with Ethereum"}
               </button>
             )}
+            {hasWallet === false && <MobileWalletHint />}
             {signIn.isError && <div className="error-box">{signIn.error.message}</div>}
           </>
         )}

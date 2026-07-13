@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { useAuth } from "@/lib/useAuth";
+import { useHasWallet } from "@/lib/useHasWallet";
 
 function truncate(address: string) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
@@ -11,6 +12,7 @@ function truncate(address: string) {
 export function Masthead() {
   const { address, isConnected } = useAccount();
   const { connect, connectors, isPending } = useConnect();
+  const hasWallet = useHasWallet();
   const { disconnect } = useDisconnect();
   const { me, signOut } = useAuth();
 
@@ -46,10 +48,10 @@ export function Masthead() {
             <button
               type="button"
               className="btn"
-              disabled={isPending || connectors.length === 0}
+              disabled={isPending || hasWallet === false}
               onClick={() => connect({ connector: connectors[0] })}
             >
-              {connectors.length === 0 ? "No wallet" : isPending ? "Connecting…" : "Connect"}
+              {hasWallet === false ? "No wallet" : isPending ? "Connecting…" : "Connect"}
             </button>
           ))}
       </nav>

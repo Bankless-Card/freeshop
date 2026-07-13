@@ -92,6 +92,12 @@
               Paying with a token takes two wallet confirmations: an approval, then the payment
               itself.
             </p>
+            <!-- Shown when no wallet is detected — e.g. plain mobile Safari/Chrome. -->
+            <p id="no-wallet-hint" class="receipt__hint" hidden>
+              On a phone? Open this page inside your wallet app's built-in browser (in MetaMask:
+              menu → Browser) and you can pay from there.
+              <button id="copy-link-btn" class="btn btn--ghost" type="button">Copy link</button>
+            </p>
             <ul id="progress" class="progress" hidden></ul>
             <div id="checkout-error" class="error-box" hidden></div>
           </form>

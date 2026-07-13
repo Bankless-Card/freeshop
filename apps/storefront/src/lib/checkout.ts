@@ -149,6 +149,8 @@ export function initCheckout(ctx: CheckoutContext): void {
     const isEth = (ctx.getFacts()?.paymentToken ?? ctx.config.payment.token) === ETH_SENTINEL;
     const erc20Note = byId("erc20-note");
     if (erc20Note) erc20Note.hidden = isEth || !address || wallet.onWrongChain();
+    const noWalletHint = byId("no-wallet-hint");
+    if (noWalletHint) noWalletHint.hidden = wallet.hasWallet();
 
     if (busy) {
       payBtn.disabled = true;
@@ -171,6 +173,20 @@ export function initCheckout(ctx: CheckoutContext): void {
   wallet.onWalletChange(refreshButton);
   // Facts land async; the caller pokes us via this custom event after reads finish.
   document.addEventListener("freeshop:facts", refreshButton);
+
+  // Companion to #no-wallet-hint: lets mobile users carry this URL into their wallet's browser.
+  const copyBtn = byId<HTMLButtonElement>("copy-link-btn");
+  copyBtn?.addEventListener("click", () => {
+    navigator.clipboard.writeText(location.href).then(
+      () => {
+        copyBtn.textContent = "Copied";
+        setTimeout(() => (copyBtn.textContent = "Copy link"), 2000);
+      },
+      () => {
+        copyBtn.textContent = "Copy failed — use the address bar";
+      },
+    );
+  });
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
