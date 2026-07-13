@@ -54,7 +54,7 @@ export function initStatusLookup(config: StoreConfig, publicClient: PublicClient
         hide(byId("lookup-error"));
         const missing = byId("lookup-missing");
         if (missing) {
-          missing.textContent = `No order № ${orderId} exists on this store.`;
+          missing.textContent = `No order № ${orderId} exists on this shop.`;
           show(missing);
         }
       } else {

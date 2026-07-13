@@ -53,7 +53,7 @@ export default function Account() {
 
       <p className="eyebrow">Danger zone</p>
       <p style={{ fontSize: 14 }}>
-        Deleting your account removes your email from our records and signs you out. Your stores
+        Deleting your account removes your email from our records and signs you out. Your shops
         and their funds live on-chain and are completely unaffected — you can sign back in with
         the same wallet any time and they will still be yours.
       </p>
@@ -62,7 +62,7 @@ export default function Account() {
         className="btn btn--danger"
         disabled={deleteAccount.isPending}
         onClick={async () => {
-          if (!confirm("Delete your account record (stored email)? Your on-chain stores are unaffected.")) return;
+          if (!confirm("Delete your account record (stored email)? Your on-chain shops are unaffected.")) return;
           await deleteAccount.mutateAsync();
           router.push("/");
         }}

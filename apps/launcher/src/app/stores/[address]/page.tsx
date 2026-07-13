@@ -100,7 +100,7 @@ export default function StoreDetail() {
     setSeeded(true);
   }, [saved.data, saved.isError, seeded]);
 
-  if (!storeAddress) return <div className="boot">NOT A VALID STORE ADDRESS</div>;
+  if (!storeAddress) return <div className="boot">NOT A VALID SHOP ADDRESS</div>;
   if (me.isPending || !seeded) return <div className="boot">LOADING…</div>;
   if (!me.data?.authenticated) {
     return (
@@ -173,7 +173,7 @@ export default function StoreDetail() {
   return (
     <div className="reveal">
       <h1 className="section-title" style={{ marginTop: 40 }}>
-        <span className="index">STORE</span> Storefront files
+        <span className="index">SHOP</span> Storefront files
       </h1>
       <dl className="rows">
         <div>
@@ -214,7 +214,7 @@ export default function StoreDetail() {
       {notOwner && (
         <div className="note note--warn" style={{ marginTop: 20 }}>
           <span>⚠</span>
-          <span>This store belongs to a different wallet; you can look, but saving is blocked.</span>
+          <span>This shop belongs to a different wallet; you can look, but saving is blocked.</span>
         </div>
       )}
 
@@ -282,7 +282,7 @@ export default function StoreDetail() {
         </h2>
         {!saved.data && (
           <p style={{ marginTop: 0, fontSize: 14 }}>
-            No saved copy of this store&apos;s form exists, so it must match what you chose at
+            No saved copy of this shop&apos;s form exists, so it must match what you chose at
             launch <em>exactly</em> — same fields, same order, same labels, keys, types, required
             flags, and placeholders. The indicator below compares against the commitment recorded
             on-chain at deploy.
@@ -300,7 +300,7 @@ export default function StoreDetail() {
             <div className="note note--warn" style={{ marginTop: 18 }}>
               <span>⚠</span>
               <span>
-                Form does <strong>not</strong> match the commitment this store registered on-chain.
+                Form does <strong>not</strong> match the commitment this shop registered on-chain.
                 A storefront built from it will warn buyers and disable checkout. Downloads stay
                 disabled until it matches.
               </span>

@@ -99,11 +99,11 @@ export default function Home() {
             <p style={{ marginTop: 0 }}>Pick up where you left off.</p>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <Link href={me.data.email ? "/stores" : "/onboarding"} className="btn btn--ink">
-                {me.data.email ? "Go to your stores" : "Finish onboarding"}
+                {me.data.email ? "Go to your shops" : "Finish onboarding"}
               </Link>
               {me.data.email && (
                 <Link href="/new" className="btn">
-                  Launch a new store
+                  Launch a new shop
                 </Link>
               )}
             </div>
@@ -151,7 +151,7 @@ export default function Home() {
           <dt>you pay</dt>
           <dd>
             {launchFee !== undefined ? `${formatEther(launchFee)} ETH` : "a one-time fee"} once per
-            store + gas · storefront hosting is free
+            shop + gas · storefront hosting is free
           </dd>
         </div>
         <div>

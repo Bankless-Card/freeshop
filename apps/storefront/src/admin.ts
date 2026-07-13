@@ -141,7 +141,7 @@ async function boot(): Promise<void> {
           banner.textContent =
             "COULD NOT SCAN ORDER EVENTS — statuses and actions still work, but buyer details " +
             "and dates are unavailable. Add \"deployBlock\" to store.config.json (the block the " +
-            "store was deployed in) or set an rpcUrl with full log support.";
+            "shop was deployed in) or set an rpcUrl with full log support.";
           show(banner);
         } else if (result.scanIncomplete) {
           banner.textContent = `SHOWING THE LATEST ${MAX_ORDERS} ORDERS — analytics cover these only.`;

@@ -24,8 +24,8 @@ export function Masthead() {
       <nav className="masthead__nav">
         {me.data?.authenticated && (
           <>
-            <Link href="/stores">Stores</Link>
-            <Link href="/new">New store</Link>
+            <Link href="/stores">Shops</Link>
+            <Link href="/new">New shop</Link>
             <Link href="/account">Account</Link>
             <button
               type="button"

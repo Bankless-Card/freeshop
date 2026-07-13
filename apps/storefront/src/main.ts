@@ -102,7 +102,7 @@ boot().catch((error) => {
   if (boot) {
     boot.classList.add("boot--error");
     boot.textContent =
-      "THIS STORE FAILED TO LOAD\n\n" +
+      "THIS SHOP FAILED TO LOAD\n\n" +
       (error instanceof Error ? error.message : String(error)) +
       "\n\nIf you are the merchant: check store.config.json.";
   }

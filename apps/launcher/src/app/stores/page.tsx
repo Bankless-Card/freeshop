@@ -59,12 +59,11 @@ export default function Stores() {
   return (
     <section className="reveal">
       <h1 className="section-title" style={{ marginTop: 40 }}>
-        <span className="index">STORES</span> All stores, one ledger
+        <span className="index">DASHBOARD</span> All shops, one graph
       </h1>
       <p style={{ fontSize: 14.5, maxWidth: "56ch" }}>
-        The store list is read straight from the factory contract — it belongs to your wallet,
-        not to us. Unique customers are counted across your whole store set (the same wallet
-        buying at two stores counts once).
+        The shop list is read straight from the blockchain. Unique customers are counted across your whole shop set (the same wallet
+        buying at two shops counts once).
       </p>
 
       {analytics.isError ? (
@@ -76,7 +75,7 @@ export default function Stores() {
       ) : null}
 
       <h2 className="section-title" style={{ marginTop: 36 }}>
-        <span className="index">LIST</span> Your stores
+        <span className="index">LIST</span> Your shops
       </h2>
 
       {chainUnavailable && (
@@ -85,7 +84,7 @@ export default function Stores() {
       {stillLoading && <p className="mono" style={{ fontSize: 13 }}>Reading factory registry…</p>}
       {!stillLoading && addresses.length === 0 && !chainUnavailable && (
         <div className="card card--flat">
-          No stores yet. <Link href="/new">Launch your first</Link> — it takes about two minutes.
+          No shops yet. <Link href="/new">Launch your first</Link> — it takes about two minutes.
         </div>
       )}
 
@@ -126,7 +125,7 @@ export default function Stores() {
               </span>
             </span>
             <Link href={`/stores/${store}`} className="btn btn--ghost">
-              Manage store
+              Manage shop
             </Link>
           </div>
         );

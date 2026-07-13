@@ -139,7 +139,12 @@ function ProductStep({
         <label className="eyebrow" htmlFor="name">
           Product name *
         </label>
-        <input id="name" value={draft.name} onChange={(e) => patch({ name: e.target.value })} />
+        <input 
+          id="name" 
+          value={draft.name} 
+          onChange={(e) => patch({ name: e.target.value })} 
+          placeholder="Short and sweet is best."
+        />
       </div>
       <div className="field">
         <label className="eyebrow" htmlFor="desc">
@@ -149,7 +154,7 @@ function ProductStep({
           id="desc"
           value={draft.description}
           onChange={(e) => patch({ description: e.target.value })}
-          placeholder="What buyers see on your storefront. Blank lines become paragraphs."
+          placeholder="What buyers see on your storefront. Blank lines become paragraphs.  You can change this any time."
         />
       </div>
       <div className="field">
@@ -160,12 +165,12 @@ function ProductStep({
           id="img"
           value={draft.imageUrl}
           onChange={(e) => patch({ imageUrl: e.target.value })}
-          placeholder="https:// or ipfs gateway URL — or leave blank and add a photo to the zip later"
+          placeholder="https:// or ipfs gateway URL — or leave blank and add a photo later."
         />
       </div>
 
       <p className="eyebrow" style={{ marginTop: 28 }}>
-        Payment asset * <span style={{ textTransform: "none", letterSpacing: 0 }}>(fixed at launch — buyers cannot choose)</span>
+        Payment asset * <span style={{ textTransform: "none", letterSpacing: 0 }}>(cannot be changed later)</span>
       </p>
       <div className="choice-row">
         {assets.map((asset) => (
@@ -184,7 +189,7 @@ function ProductStep({
 
       <div className="field" style={{ marginTop: 20 }}>
         <label className="eyebrow" htmlFor="price">
-          Price ({draft.asset.symbol}) *
+          Price ({draft.asset.symbol}) * <span style={{ textTransform: "none", letterSpacing: 0 }}>(cannot be changed later)</span>
         </label>
         <input
           id="price"
@@ -209,7 +214,7 @@ function ProductStep({
         {!payoutOk && <p className="field__error">Not a valid address</p>}
         <p className="field__hint">
           Where withdrawals go. <strong>Permanent</strong> — it cannot be changed after launch; to
-          switch wallets later you would launch a new store. Defaults to your connected wallet.
+          switch wallets later you would launch a new shop. Defaults to your connected wallet.
         </p>
       </div>
 
@@ -569,7 +574,7 @@ function ReviewStep({
               ? "Confirm in your wallet…"
               : phase === "mining"
                 ? "Deploying…"
-                : `Launch store (${estimate ? formatEther(estimate.launchFee) : "…"} ETH + gas)`}
+                : `Launch shop (${estimate ? formatEther(estimate.launchFee) : "…"} ETH + gas)`}
           </button>
         )}
       </div>
@@ -626,7 +631,7 @@ function LaunchedStep({ storeAddress, txHash, config }: { storeAddress: Hex; txH
       <h1 style={{ fontSize: 34, margin: "18px 0 6px" }}>{config.product.name} is live on-chain.</h1>
       <dl className="rows">
         <div>
-          <dt>store contract</dt>
+          <dt>shop contract</dt>
           <dd>
             {explorer ? (
               <a href={`${explorer}/address/${storeAddress}`} target="_blank" rel="noreferrer">
@@ -656,7 +661,7 @@ function LaunchedStep({ storeAddress, txHash, config }: { storeAddress: Hex; txH
       </h2>
       <ol style={{ fontSize: 14.5, paddingLeft: 20, lineHeight: 1.8 }}>
         <li>
-          Download your storefront — a ready-made static site with your store baked in. No build
+          Download your storefront — a ready-made static site with your shop baked in. No build
           step needed.
         </li>
         <li>
@@ -692,7 +697,7 @@ function LaunchedStep({ storeAddress, txHash, config }: { storeAddress: Hex; txH
 
       <p className="field__hint" style={{ marginTop: 20 }}>
         Keep the wallet that signed your encryption key — it is the only thing that can read your
-        orders. Your store appears under <a href="/stores">Stores</a>.
+        orders. Your shop appears under <a href="/stores">Shops</a>.
       </p>
     </div>
   );

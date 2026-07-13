@@ -55,7 +55,7 @@ function readmeFor(config: StoreConfig): string {
     : "";
   return `YOUR STOREFRONT — ${config.product.name}
 ================================================================
-Store contract: ${config.storeAddress} (chain id ${config.chainId})
+Shop contract: ${config.storeAddress} (chain id ${config.chainId})
 
 This folder is a complete, ready-to-host website. No build step, no server,
 no database. Payments go to your escrow contract, never through anyone else.
@@ -91,7 +91,7 @@ EDIT IT (no tools needed — any text editor)
 ONE WARNING
 -----------
 Do NOT edit the "fulfillment" fields in store.config.json. Your order form
-was cryptographically committed on-chain when the store launched; if the
+was cryptographically committed on-chain when the shop launched; if the
 form no longer matches, the storefront warns buyers and disables checkout
 on purpose. Product name/description/images are safe to change freely.
 ${templateRepo}

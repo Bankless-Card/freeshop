@@ -48,7 +48,7 @@
         <section id="gate" class="section reveal" style="--i: 1">
           <div id="gate-connect" hidden>
             <h2 class="section__title">Connect the merchant wallet</h2>
-            <p>This page manages the store for its merchant. Connect the payout wallet to open it.</p>
+            <p>This page manages the shop for its merchant. Connect the payout wallet to open it.</p>
             <button id="gate-connect-btn" class="btn btn--ink" type="button">Connect wallet</button>
             <p id="no-wallet-hint" class="receipt__hint" hidden>
               On a phone? Open this page inside your wallet app's built-in browser (in MetaMask:
@@ -57,7 +57,7 @@
           </div>
           <div id="gate-wrong-chain" hidden>
             <h2 class="section__title">Wrong network</h2>
-            <p>This store lives on <span data-slot="gate-chain"></span>.</p>
+            <p>This shop lives on <span data-slot="gate-chain"></span>.</p>
             <button id="switch-chain-btn" class="btn btn--ink" type="button">Switch network</button>
           </div>
           <div id="gate-wrong-wallet" hidden>
@@ -66,7 +66,7 @@
               connected: <span data-slot="gate-connected"></span><br />
               merchant:&nbsp;&nbsp;<span data-slot="gate-merchant"></span>
             </p>
-            <p>Switch to the store's payout wallet to open the dashboard.</p>
+            <p>Switch to the shop's payout wallet to open the dashboard.</p>
           </div>
           <div id="gate-error" class="error-box" hidden></div>
         </section>
@@ -99,7 +99,7 @@
               <span>
                 Buyer details are encrypted on-chain. Sign one message to derive your reading key
                 <em>in this browser</em> — the key is kept in memory and never sent anywhere. If
-                you created the store's key with a different wallet than the payout wallet, unlock
+                you created the shop's key with a different wallet than the payout wallet, unlock
                 with that one.
               </span>
             </div>
@@ -125,7 +125,7 @@
             </div>
             <button id="withdraw-btn" class="btn btn--ink" type="button">Withdraw to merchant wallet</button>
             <p class="receipt__hint">
-              Anyone may trigger a withdrawal; the funds only ever go to the store's permanent
+              Anyone may trigger a withdrawal; the funds only ever go to the shop's permanent
               merchant address.
             </p>
             <div id="withdraw-error" class="error-box" hidden></div>

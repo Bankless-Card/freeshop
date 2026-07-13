@@ -67,7 +67,7 @@ export function WithdrawPanel({ store, symbol, decimals, unfulfilled }: Withdraw
         {busy ? "Withdrawing…" : "Withdraw to merchant address"}
       </button>
       <p className="field__hint">
-        Anyone may trigger a withdrawal, but funds only ever go to the store&apos;s permanent
+        Anyone may trigger a withdrawal, but funds only ever go to the shop&apos;s permanent
         merchant address. You can also call <span className="mono">withdraw()</span> straight from
         a block explorer — this button is a convenience, not a dependency.
       </p>
