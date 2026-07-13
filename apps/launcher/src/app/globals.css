@@ -119,6 +119,10 @@ h3 {
 /* ——— buttons ——— */
 
 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 600;
