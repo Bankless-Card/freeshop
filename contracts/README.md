@@ -2,7 +2,7 @@
 
 Per-product escrow contracts for the decentralized storefront launcher.
 
-- **`StorefrontFactory`** — platform-deployed once. Charges the launch fee (owner-adjustable, default 0.01 ETH; `msg.value` must match it exactly so a stale client can't overpay after a fee change), forwards it to the treasury, validates the payment asset (native ETH sentinel `address(0)` or an allowlisted ERC-20), deploys `StoreEscrow`s, and keeps the on-chain merchant → stores registry.
+- **`StorefrontFactory`** — platform-deployed once. Charges the launch fee (owner-adjustable, default 0.005 ETH; `msg.value` must match it exactly so a stale client can't overpay after a fee change), forwards it to the treasury, validates the payment asset (native ETH sentinel `address(0)` or an allowlisted ERC-20), deploys `StoreEscrow`s, and keeps the on-chain merchant → stores registry.
 - **`StoreEscrow`** — one per product. Immutable constructor-set config (merchant, payment asset, price, merchant x25519 pubkey, fulfillment-schema hash). `pay()` emits the buyer's encrypted fulfillment blob as event data (never storage). Merchant-only `setStatus`/`refund`; `withdraw()` is callable by anyone but always pays the immutable merchant. ETH refunds push to the buyer and fall back to a claimable credit if the push reverts; the withdrawable balance always excludes unclaimed refund credits.
 
 ## Develop
@@ -39,7 +39,7 @@ Needs a funded deployer key plus RPC and Etherscan API keys:
 export SEPOLIA_RPC_URL=...
 export ETHERSCAN_API_KEY=...
 export TREASURY=0x...        # optional, defaults to deployer
-export LAUNCH_FEE=10000000000000000  # optional, defaults to 0.01 ether
+export LAUNCH_FEE=5000000000000000  # optional, defaults to 0.005 ether
 
 forge script script/Deploy.s.sol --rpc-url sepolia --broadcast --verify \
   --private-key $DEPLOYER_KEY
@@ -60,8 +60,8 @@ cast send $FACTORY "setLaunchFee(uint256)" 1000000000000000 --rpc-url $RPC --led
 # verify
 cast call $FACTORY "launchFee()(uint256)" --rpc-url $RPC
 
-# end promo: back to 0.01 ETH
-cast send $FACTORY "setLaunchFee(uint256)" 10000000000000000 --rpc-url $RPC --ledger
+# end promo: back to 0.005 ETH
+cast send $FACTORY "setLaunchFee(uint256)" 5000000000000000 --rpc-url $RPC --ledger
 ```
 
 Use `--private-key $OWNER_KEY` instead of `--ledger` if the owner is a raw key (testnet only).

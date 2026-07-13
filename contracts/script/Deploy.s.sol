@@ -9,7 +9,7 @@ import {StorefrontFactory} from "../src/StorefrontFactory.sol";
 /// Env vars:
 ///   TREASURY   — launch-fee recipient (defaults to the deployer)
 ///   USDC       — USDC address to allowlist (defaults to Sepolia USDC)
-///   LAUNCH_FEE — fee in wei (defaults to 0.01 ether)
+///   LAUNCH_FEE — fee in wei (defaults to 0.005 ether)
 ///
 /// Sepolia:
 ///   forge script script/Deploy.s.sol --rpc-url sepolia --broadcast --verify \
@@ -21,7 +21,7 @@ contract Deploy is Script {
         address deployer = msg.sender;
         address treasury = vm.envOr("TREASURY", deployer);
         address usdc = vm.envOr("USDC", SEPOLIA_USDC);
-        uint256 launchFee = vm.envOr("LAUNCH_FEE", uint256(0.01 ether));
+        uint256 launchFee = vm.envOr("LAUNCH_FEE", uint256(0.005 ether));
 
         vm.startBroadcast();
         factory = new StorefrontFactory(deployer, treasury, launchFee);
