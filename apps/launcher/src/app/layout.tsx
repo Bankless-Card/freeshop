@@ -27,7 +27,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             {children}
             <footer className="colophon">
               <span>freeshop launcher</span>
-              <span>your contract · your storefront · your keys</span>
+              <span>your contract · your website · your business</span>
             </footer>
           </main>
         </Providers>
