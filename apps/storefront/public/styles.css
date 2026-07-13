@@ -559,6 +559,45 @@ a:hover {
   white-space: pre-wrap;
 }
 
+/* ——— merchant dashboard (admin.html) order rows ——— */
+
+.order-row {
+  border: 1px solid var(--rule);
+  background: var(--paper-deep);
+  padding: 16px 18px;
+  margin: 14px 0;
+}
+
+.order-row__head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.order-row__meta {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.order-row__details {
+  margin: 10px 0;
+  font-size: 13.5px;
+}
+
+.order-row__details--muted {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.order-row__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 /* ——— staggered reveal on load ——— */
 
 .reveal {

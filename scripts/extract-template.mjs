@@ -22,7 +22,7 @@ rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 
 // ——— storefront app files ———
-for (const entry of ["src", "public", "test", "index.html", "vite.config.ts", "tsconfig.json", "tsconfig.app.json", "tsconfig.node.json", "README.md", ".github"]) {
+for (const entry of ["src", "public", "test", "index.html", "admin.html", "vite.config.ts", "tsconfig.json", "tsconfig.app.json", "tsconfig.node.json", "README.md", ".github"]) {
   cpSync(join(storefront, entry), join(out, entry), { recursive: true });
 }
 

@@ -15,6 +15,11 @@
       "description": "Optional RPC override. Must never be a secret — this file is public."
     },
     "storeAddress": { "$ref": "#/$defs/address" },
+    "deployBlock": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Block number the store contract was deployed in. Lets admin.html scan order events efficiently."
+    },
     "product": {
       "type": "object",
       "required": ["name", "description", "images"],

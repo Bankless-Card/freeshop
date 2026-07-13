@@ -173,6 +173,23 @@ cast send $STORE "withdraw()" --rpc-url http://localhost:8545 \
 - [ ] Withdraw was sent by the **buyer's** key, but the **merchant** balance received the funds
       (withdraw always pays the immutable merchant — anyone may trigger it).
 
+### 5c. Storefront merchant dashboard (admin.html — no backend)
+
+Open `<storefront url>/admin.html` (in dev: the vite dev server URL + `/admin.html`).
+
+- [ ] With no wallet / the **buyer's** wallet connected: gate shows "connect" / "not the
+      merchant wallet" and the panel stays hidden.
+- [ ] Connect the **merchant** wallet on the wrong network → "wrong network" + switch button.
+- [ ] Merchant wallet on the right chain: panel opens; analytics match the orders placed in
+      §4/§5 (sales, unique buyers, awaiting fulfilment, refunds, gross/refunded).
+- [ ] "Sign to unlock order details" → one signature → buyer details decrypt in the rows
+      (same fields the buyer typed at checkout). No network request carries the key.
+- [ ] Mark fulfilled / Cancel / Refund buttons follow status rules and land on-chain
+      (statuses update in place; a refund moves the buyer's balance).
+- [ ] Withdraw shows the live withdrawable balance and pays the merchant.
+- [ ] Remove `deployBlock` from store.config.json and reload: on anvil everything still
+      works (full-range scan succeeds); statuses/actions never depend on the scan.
+
 
 ---
 

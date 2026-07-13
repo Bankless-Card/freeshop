@@ -10,8 +10,13 @@ export default defineConfig({
   build: {
     minify: false,
     rolldownOptions: {
+      input: {
+        index: "index.html",
+        admin: "admin.html",
+      },
       output: {
-        entryFileNames: "assets/app.js",
+        // index keeps its historical name (README.txt references assets/app.js).
+        entryFileNames: (chunk) => (chunk.name === "index" ? "assets/app.js" : "assets/[name].js"),
         chunkFileNames: "assets/[name].js",
         assetFileNames: "assets/[name]-[hash][extname]",
       },

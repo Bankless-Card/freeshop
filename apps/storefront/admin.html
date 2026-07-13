@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <meta
+      name="description"
+      content="Merchant dashboard for this self-hosted storefront. Connect the merchant wallet to manage orders."
+    />
+    <title>Merchant dashboard</title>
+    <!--
+      THIS PAGE IS YOURS TO EDIT — same rules as index.html: elements with id="…" or
+      data-slot="…" are how the app finds things; delete a whole <section> and the rest
+      still works.
+
+      SECURITY MODEL — why a dashboard can live on a static page:
+      · The wallet gate below is a curtain, not a lock. Everything it hides is either
+        already public on the blockchain (order ids, statuses, amounts, buyer addresses)
+        or encrypted (buyer details decrypt only with a key derived from the merchant
+        wallet's signature — signed fresh each visit, kept in memory, never sent anywhere).
+      · Actions are enforced by the contract itself: fulfil/cancel/refund revert for
+        anyone but the merchant, and withdraw always pays the merchant no matter who
+        clicks it. A visitor who strips this gate can only burn their own gas.
+      · Only sign the unlock message on sites you trust — any site could ask for the same
+        signature and gain the ability to read (never move) your order details.
+    -->
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="root">
+      <!-- Shown while store.config.json loads, or with an error if it can't. -->
+      <div id="boot" class="boot">LOADING DASHBOARD…</div>
+
+      <div id="admin" hidden>
+        <!-- ———————————————————————— masthead ———————————————————————— -->
+        <header class="masthead reveal">
+          <div class="masthead__brand">
+            <span class="eyebrow">Merchant dashboard</span>
+            <span class="masthead__chain" data-slot="chain-line"></span>
+          </div>
+          <button id="wallet-btn" class="btn" type="button" hidden></button>
+        </header>
+
+        <!-- ———————————————————————— gate ———————————————————————— -->
+        <!-- Cosmetic only (see the note in <head>): keeps buyers out of a confusing screen. -->
+        <section id="gate" class="section reveal" style="--i: 1">
+          <div id="gate-connect" hidden>
+            <h2 class="section__title">Connect the merchant wallet</h2>
+            <p>This page manages the store for its merchant. Connect the payout wallet to open it.</p>
+            <button id="gate-connect-btn" class="btn btn--ink" type="button">Connect wallet</button>
+            <p id="no-wallet-hint" class="receipt__hint" hidden>
+              On a phone? Open this page inside your wallet app's built-in browser (in MetaMask:
+              menu → Browser).
+            </p>
+          </div>
+          <div id="gate-wrong-chain" hidden>
+            <h2 class="section__title">Wrong network</h2>
+            <p>This store lives on <span data-slot="gate-chain"></span>.</p>
+            <button id="switch-chain-btn" class="btn btn--ink" type="button">Switch network</button>
+          </div>
+          <div id="gate-wrong-wallet" hidden>
+            <h2 class="section__title">Not the merchant wallet</h2>
+            <p class="mono" style="font-size: 13px">
+              connected: <span data-slot="gate-connected"></span><br />
+              merchant:&nbsp;&nbsp;<span data-slot="gate-merchant"></span>
+            </p>
+            <p>Switch to the store's payout wallet to open the dashboard.</p>
+          </div>
+          <div id="gate-error" class="error-box" hidden></div>
+        </section>
+
+        <div id="panel" hidden>
+          <!-- ———————————————————————— analytics ———————————————————————— -->
+          <section id="analytics" class="section reveal" style="--i: 1">
+            <h2 class="section__title"><span class="section__index">01</span> At a glance</h2>
+            <dl class="receipt" style="margin-top: 0">
+              <div class="receipt__row"><dt>sales</dt><dd data-slot="stat-sales"></dd></div>
+              <div class="receipt__row"><dt>unique buyers</dt><dd data-slot="stat-buyers"></dd></div>
+              <div class="receipt__row"><dt>awaiting fulfilment</dt><dd data-slot="stat-unfulfilled"></dd></div>
+              <div class="receipt__row"><dt>refunds</dt><dd data-slot="stat-refunds"></dd></div>
+              <div class="receipt__row"><dt>gross</dt><dd data-slot="stat-gross"></dd></div>
+              <div class="receipt__row"><dt>refunded</dt><dd data-slot="stat-refunded"></dd></div>
+            </dl>
+          </section>
+
+          <hr class="rule-dashed" />
+
+          <!-- ———————————————————————— orders ———————————————————————— -->
+          <section id="orders" class="section reveal" style="--i: 2">
+            <h2 class="section__title"><span class="section__index">02</span> Orders</h2>
+
+            <div class="encrypt-note">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <rect x="4" y="10" width="16" height="11" stroke="currentColor" stroke-width="2.4" />
+                <path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="2.4" />
+              </svg>
+              <span>
+                Buyer details are encrypted on-chain. Sign one message to derive your reading key
+                <em>in this browser</em> — the key is kept in memory and never sent anywhere. If
+                you created the store's key with a different wallet than the payout wallet, unlock
+                with that one.
+              </span>
+            </div>
+            <button id="unlock-btn" class="btn" type="button">Sign to unlock order details</button>
+
+            <div id="scan-warning" class="warn-banner" hidden></div>
+            <p id="orders-empty" class="mono" style="font-size: 13px" hidden>No orders yet.</p>
+            <div id="orders-list"></div>
+            <button id="show-older-btn" class="btn btn--ghost" type="button" hidden>Show older orders</button>
+            <div id="orders-error" class="error-box" hidden></div>
+          </section>
+
+          <hr class="rule-dashed" />
+
+          <!-- ———————————————————————— withdraw ———————————————————————— -->
+          <section id="withdraw" class="section reveal" style="--i: 3">
+            <h2 class="section__title"><span class="section__index">03</span> Withdraw</h2>
+            <p class="eyebrow">withdrawable balance</p>
+            <p class="receipt__ordernum" data-slot="available-balance"></p>
+            <div id="withdraw-warning" class="warn-banner" hidden>
+              Some orders are still awaiting fulfilment. Withdrawn funds are no longer available
+              for refunding them.
+            </div>
+            <button id="withdraw-btn" class="btn btn--ink" type="button">Withdraw to merchant wallet</button>
+            <p class="receipt__hint">
+              Anyone may trigger a withdrawal; the funds only ever go to the store's permanent
+              merchant address.
+            </p>
+            <div id="withdraw-error" class="error-box" hidden></div>
+          </section>
+
+          <div id="admin-error" class="error-box" hidden></div>
+        </div>
+
+        <!-- ———————————————————————— colophon ———————————————————————— -->
+        <footer class="colophon">
+          <span>escrow contract: <a data-slot="contract-link" target="_blank" rel="noreferrer"></a></span>
+          <span data-slot="colophon-note"></span>
+        </footer>
+      </div>
+
+      <!-- ————————— templates for the repeating, generated pieces ————————— -->
+
+      <!-- One order row. The app fills the slots and shows the buttons the status allows. -->
+      <template id="tpl-order-row">
+        <article class="order-row">
+          <div class="order-row__head">
+            <span class="receipt__ordernum" data-slot="order-num"></span>
+            <span class="stamp" data-slot="order-stamp"></span>
+            <span class="order-row__meta" data-slot="order-date"></span>
+          </div>
+          <dl>
+            <div class="receipt__row"><dt>buyer</dt><dd class="mono" data-slot="order-buyer"></dd></div>
+            <div class="receipt__row"><dt>amount</dt><dd data-slot="order-amount"></dd></div>
+          </dl>
+          <div class="order-row__details" data-slot="order-details"></div>
+          <div class="order-row__actions">
+            <button class="btn" type="button" data-slot="btn-fulfill" hidden>Mark fulfilled</button>
+            <button class="btn btn--ghost" type="button" data-slot="btn-cancel" hidden>Cancel</button>
+            <button class="btn btn--ghost" type="button" data-slot="btn-refund" hidden>Refund</button>
+          </div>
+        </article>
+      </template>
+
+      <!-- One decrypted buyer-detail line inside an order row. -->
+      <template id="tpl-detail-row">
+        <div class="receipt__row"><dt data-slot="detail-label"></dt><dd data-slot="detail-value"></dd></div>
+      </template>
+    </div>
+
+    <script type="module" src="/src/admin.ts"></script>
+  </body>
+</html>

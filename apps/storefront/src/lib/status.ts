@@ -5,7 +5,7 @@ import { formatAmount, truncateAddress } from "./format";
 
 export const ORDER_STATUS_LABELS = ["NONE", "PAID", "FULFILLED", "CANCELLED", "REFUNDED"] as const;
 
-const STAMP_CLASS: Record<string, string> = {
+export const STAMP_CLASS: Record<string, string> = {
   PAID: "stamp--paid",
   FULFILLED: "stamp--fulfilled",
   CANCELLED: "stamp--cancelled",

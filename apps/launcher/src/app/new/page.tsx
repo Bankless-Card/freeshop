@@ -16,6 +16,7 @@ import { paymentAssets, type PaymentAsset } from "@/lib/assets";
 import { launcherChain } from "@/lib/chains";
 import { publicEnv } from "@/lib/env";
 import { useAuth } from "@/lib/useAuth";
+import { useHasWallet } from "@/lib/useHasWallet";
 import { SchemaBuilder, fieldsAreValid } from "@/components/SchemaBuilder";
 
 const STEPS = ["product", "order form", "encryption key", "review", "launched"] as const;
@@ -359,6 +360,7 @@ function ReviewStep({
   const { writeContractAsync } = useWriteContract();
   const { address: connected, chainId: walletChainId, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
+  const hasWallet = useHasWallet();
   const { switchChain, isPending: isSwitching, error: switchError } = useSwitchChain();
   const chain = launcherChain();
 
@@ -417,12 +419,20 @@ function ReviewStep({
     let txHash: Hex | undefined;
     try {
       setPhase("wallet");
+      // The factory requires msg.value == launchFee, so re-read the fee at submit time
+      // in case the owner changed it after this page loaded.
+      const launchFee = await publicClient.readContract({
+        address: publicEnv.factoryAddress,
+        abi: storefrontFactoryAbi,
+        functionName: "launchFee",
+      });
+      if (launchFee !== estimate.launchFee) setEstimate({ ...estimate, launchFee });
       txHash = await writeContractAsync({
         address: publicEnv.factoryAddress,
         abi: storefrontFactoryAbi,
         functionName: "deployStore",
         args: deployArgs,
-        value: estimate.launchFee,
+        value: launchFee,
       });
       setPendingTx(txHash);
       setPhase("mining");
@@ -438,6 +448,7 @@ function ReviewStep({
         version: 1,
         chainId: chain.id,
         storeAddress: deployed.args.store,
+        deployBlock: Number(receipt.blockNumber),
         product: {
           name: draft.name.trim(),
           description: draft.description.trim(),
@@ -538,10 +549,10 @@ function ReviewStep({
           <button
             type="button"
             className="btn btn--ink"
-            disabled={connectors.length === 0}
+            disabled={hasWallet === false}
             onClick={() => connect({ connector: connectors[0] })}
           >
-            Connect wallet
+            {hasWallet === false ? "No wallet detected" : "Connect wallet"}
           </button>
         ) : wrongChain ? (
           <button

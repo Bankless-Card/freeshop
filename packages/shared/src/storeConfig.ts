@@ -23,6 +23,8 @@ export interface StoreConfig {
   /** Optional RPC override; defaults to the chain's public RPC. Never a secret. */
   rpcUrl?: string;
   storeAddress: Hex;
+  /** Block the store contract was deployed in; bounds the admin page's order-event scans. */
+  deployBlock?: number;
   product: {
     name: string;
     description: string;
@@ -68,6 +70,9 @@ export function parseStoreConfig(raw: unknown): StoreConfig {
   if (cfg.rpcUrl !== undefined && typeof cfg.rpcUrl !== "string") fail("rpcUrl must be a string");
   if (typeof cfg.storeAddress !== "string" || !HEX_ADDRESS.test(cfg.storeAddress)) {
     fail("storeAddress must be a 0x address");
+  }
+  if (cfg.deployBlock !== undefined && (!Number.isInteger(cfg.deployBlock) || cfg.deployBlock < 0)) {
+    fail("deployBlock must be a non-negative integer");
   }
 
   const product = cfg.product;

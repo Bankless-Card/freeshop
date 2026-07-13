@@ -12,12 +12,15 @@ CSS file, and a small readable script wires them to the blockchain.
 - Buyers' order details (email, shipping address, …) are **encrypted in their browser** with
   your public key and ride along inside the payment transaction. Only you can read them, from
   your dashboard. No server is involved, including ours.
+- Your merchant dashboard ships with the store: open `admin.html` on your deployed site
+  (see "Your dashboard" below).
 
 ## Edit your store
 
 | File | What it is |
 | --- | --- |
 | `index.html` | Page structure. Reorder/delete whole `<section>`s, add your own HTML. Keep `id`/`data-slot` attributes on elements you keep — that's how the app finds them. `<template>` tags define repeated bits (form fields, progress lines). |
+| `admin.html` | Your merchant dashboard — analytics, orders, refunds, withdraw. Same editing rules. |
 | `public/styles.css` | Every color, font, and spacing value. Edit the `:root` tokens to retheme the whole store. |
 | `public/store.config.json` | Product name, description, price display, image list. **Never edit `fulfillment.fields`** — the form is committed on-chain and checkout disables itself on a mismatch, by design. |
 | `public/product.svg` | Replace with your product photo (update `product.images` to match). |
@@ -45,6 +48,25 @@ folder in. Or connect the repo with build command `pnpm build`, output `dist`.
 The included workflow (`.github/workflows/deploy-pages.yml`) builds and publishes on push.
 
 Any other static host works the same way: upload `dist/`.
+
+## Your dashboard (`admin.html`)
+
+Open `admin.html` on your deployed store (e.g. `yourstore.com/admin.html`) and connect the
+store's payout wallet: analytics at a glance, every order with its status, one signature to
+decrypt buyer details in your browser, and fulfil / cancel / refund / withdraw buttons.
+
+- **The wallet gate is a curtain, not a lock** — and that's fine. Everything behind it is
+  either already public on the blockchain (order ids, statuses, amounts, buyer addresses) or
+  encrypted. The contract itself rejects merchant actions from any other wallet, and
+  `withdraw` only ever pays your permanent merchant address.
+- **The decryption key never exists on disk.** It is re-derived from your wallet's signature
+  each time you unlock, held in memory, and never sent anywhere. Only sign that message on
+  sites you trust. If you created the store's key with a different wallet than the payout
+  wallet, connect the payout wallet to open the page, then you'll need that other wallet to
+  read order details.
+- `store.config.json`'s `deployBlock` tells the dashboard where to start scanning for order
+  events. The launcher fills it in automatically; if your config predates it, add the block
+  number your store was deployed in.
 
 ## Trust properties (what buyers can verify)
 

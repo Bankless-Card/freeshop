@@ -95,9 +95,16 @@ describe("parseStoreConfig", () => {
     expect(parseStoreConfig(structuredClone(valid)).product.name).toBe("Thing");
   });
 
+  it("accepts an optional deployBlock", () => {
+    expect(parseStoreConfig({ ...valid, deployBlock: 123 }).deployBlock).toBe(123);
+    expect(parseStoreConfig(structuredClone(valid)).deployBlock).toBeUndefined();
+  });
+
   it.each([
     ["version", { ...valid, version: 2 }],
     ["storeAddress", { ...valid, storeAddress: "nope" }],
+    ["deployBlock", { ...valid, deployBlock: -1 }],
+    ["fractional deployBlock", { ...valid, deployBlock: 1.5 }],
     ["price", { ...valid, payment: { ...valid.payment, price: "1.5" } }],
     ["empty fields", { ...valid, fulfillment: { fields: [] } }],
     [

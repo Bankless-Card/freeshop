@@ -79,9 +79,14 @@ EDIT IT (no tools needed — any text editor)
 · store.config.json Product name, description, price display, image list.
 · product.svg       Replace with your product photo (update "images" in
                     store.config.json to match the filename).
+· admin.html        Your merchant dashboard. Open it on your deployed site
+                    and connect your payout wallet: analytics, orders (one
+                    signature decrypts buyer details in your browser),
+                    fulfil / cancel / refund, and withdraw. It needs no
+                    secrets — the contract itself rejects anyone else.
 · assets/app.js     The app's behavior (readable, unminified). You normally
                     won't need to touch it — the page markup lives in
-                    index.html, not here.
+                    index.html, not here. (assets/admin.js is the dashboard's.)
 
 ONE WARNING
 -----------
