@@ -47,8 +47,7 @@ export default function Onboarding() {
             onChange={(e) => setEmail(e.target.value)}
           />
           <p className="field__hint">
-            Stored against your wallet address so we can reach you about your account. Not
-            verified today; future opt-in sale notifications will use it. Never shown on your
+            We collect your email so we can reach you about your account.  It is never shown on your
             storefront, and you can delete it any time from Account.
           </p>
         </div>
@@ -71,10 +70,9 @@ export default function Onboarding() {
         <label className="check">
           <input type="checkbox" checked={agreedCrypto} onChange={(e) => setAgreedCrypto(e.target.checked)} />
           <span>
-            <strong>I understand how the encryption works.</strong> Customer order details are
-            encrypted to a key derived from my wallet signature and recorded permanently on a
-            public blockchain as ciphertext. They cannot be deleted; whoever controls my wallet
-            can read them; if I lose the wallet, I lose the ability to read orders.
+            <strong>I am responsible for my Ethereum wallet.</strong> My funds and order details are  
+            protected by my wallet.  If I lose control of my wallet, I lose the ability to collect 
+            funds and read orders.
           </span>
         </label>
 

@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useAccount, useConnect } from "wagmi";
+import { formatEther } from "viem";
+import { useAccount, useConnect, useReadContract } from "wagmi";
+import { storefrontFactoryAbi } from "@freeshop/shared";
+import { publicEnv } from "@/lib/env";
 import { useAuth } from "@/lib/useAuth";
 import { useHasWallet } from "@/lib/useHasWallet";
 
@@ -35,14 +38,37 @@ function MobileWalletHint() {
 export default function Home() {
   const router = useRouter();
   const { isConnected } = useAccount();
-  const { connect, connectors, isPending: isConnecting } = useConnect();
+  const { connectAsync, connectors, isPending: isConnecting } = useConnect();
   const hasWallet = useHasWallet();
   const { me, signIn } = useAuth();
+  const [connectError, setConnectError] = useState<string>();
+  // The fee is owner-adjustable on the factory; never hardcode it in copy.
+  const { data: launchFee } = useReadContract({
+    address: publicEnv.factoryAddress,
+    abi: storefrontFactoryAbi,
+    functionName: "launchFee",
+  });
 
-  // Navigate onward only as the result of the sign-in action itself — a signed-in visitor to
-  // the home page stays on the home page.
-  async function signInAndContinue() {
-    await signIn.mutateAsync();
+  // One click: connect (if needed), then immediately request the SIWE signature — the button
+  // text narrates each step. Navigate onward only as the result of the sign-in action itself;
+  // a signed-in visitor to the home page stays on the home page.
+  async function connectAndSignIn() {
+    setConnectError(undefined);
+    let justConnected: `0x${string}` | undefined;
+    if (!isConnected) {
+      try {
+        const result = await connectAsync({ connector: connectors[0] });
+        justConnected = result.accounts[0];
+      } catch (err) {
+        setConnectError((err instanceof Error ? err.message : String(err)).split("\n")[0]);
+        return;
+      }
+    }
+    try {
+      await signIn.mutateAsync(justConnected);
+    } catch {
+      return; // rendered via signIn.isError
+    }
     const state = (await (await fetch("/api/me")).json()) as { email?: string | null };
     router.push(state.email ? "/stores" : "/onboarding");
   }
@@ -91,31 +117,27 @@ export default function Home() {
               Your wallet is your account — no password needed. Signing costs nothing and sends
               no transaction.
             </p>
-            {!isConnected ? (
-              <button
-                type="button"
-                className="btn btn--ink"
-                disabled={isConnecting || hasWallet === false}
-                onClick={() => connect({ connector: connectors[0] })}
-              >
-                {hasWallet === false
-                  ? "No wallet detected — install one first"
-                  : isConnecting
-                    ? "Connecting…"
-                    : "Connect wallet"}
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="btn btn--ink"
-                disabled={signIn.isPending}
-                onClick={() => void signInAndContinue()}
-              >
-                {signIn.isPending ? "Check your wallet…" : "Sign in with Ethereum"}
-              </button>
-            )}
+            
+            <button
+              type="button"
+              className="btn btn--ink"
+              disabled={isConnecting || signIn.isPending || hasWallet === false}
+              onClick={() => void connectAndSignIn()}
+            >
+              {hasWallet === false
+                ? "No wallet detected — install one first"
+                : isConnecting
+                  ? "Connecting…"
+                  : signIn.isPending
+                    ? "Check your wallet…"
+                    : isConnected
+                      ? "Sign in with Ethereum"
+                      : "Connect & sign in"}
+            </button>
             {hasWallet === false && <MobileWalletHint />}
-            {signIn.isError && <div className="error-box">{signIn.error.message}</div>}
+            {(connectError || signIn.isError) && (
+              <div className="error-box">{connectError ?? signIn.error?.message}</div>
+            )}
           </>
         )}
       </div>
@@ -127,7 +149,10 @@ export default function Home() {
         </div>
         <div>
           <dt>you pay</dt>
-          <dd>0.01 ETH once per store + gas · storefront hosting is free</dd>
+          <dd>
+            {launchFee !== undefined ? `${formatEther(launchFee)} ETH` : "a one-time fee"} once per
+            store + gas · storefront hosting is free
+          </dd>
         </div>
         <div>
           <dt>we never see</dt>

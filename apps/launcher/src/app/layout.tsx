@@ -12,9 +12,9 @@ import { Masthead } from "@/components/Masthead";
 import { Providers } from "@/components/Providers";
 
 export const metadata: Metadata = {
-  title: "freeshop — launch a self-hosted crypto storefront",
+  title: "freeshop — own your storefront, own your business",
   description:
-    "Deploy your own escrow contract and get a free, static storefront. No backend, no processors, your keys.",
+    "Pay once for a storefront you own outright: an Ethereum escrow contract that accepts ETH and USDC directly, plus a free static storefront you edit and host anywhere. No middlemen, no monthly fees.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

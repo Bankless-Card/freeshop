@@ -30,11 +30,14 @@ export function useAuth() {
   });
 
   const signIn = useMutation({
-    mutationFn: async () => {
-      if (!connectedAddress) throw new Error("connect a wallet first");
+    // The address can be passed by a caller that just finished connecting — React state
+    // (useAccount) hasn't re-rendered yet in that same tick.
+    mutationFn: async (justConnectedAddress?: `0x${string}`) => {
+      const address = justConnectedAddress ?? connectedAddress;
+      if (!address) throw new Error("connect a wallet first");
       const { nonce } = await fetchJson<{ nonce: string }>("/api/auth/nonce");
       const message = createSiweMessage({
-        address: connectedAddress,
+        address,
         chainId: launcherChain().id,
         domain: location.host,
         nonce,
