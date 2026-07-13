@@ -47,7 +47,8 @@ contract StorefrontFactory is Ownable {
     /// @notice Deploys a StoreEscrow. `merchant` is the immutable payout address — it need not be
     ///         msg.sender, so a merchant can launch from one wallet and be paid to another.
     ///         `paymentToken` is address(0) for native ETH or an allowlisted ERC-20.
-    ///         The full msg.value (>= launchFee) is forwarded to the treasury.
+    ///         msg.value must equal launchFee exactly and is forwarded to the treasury; the
+    ///         exact-match check keeps callers holding a stale fee from overpaying after a change.
     function deployStore(
         address merchant,
         address paymentToken,
@@ -55,7 +56,7 @@ contract StorefrontFactory is Ownable {
         bytes32 merchantPubKey,
         bytes32 fulfillmentSchemaHash
     ) external payable returns (address store) {
-        if (msg.value < launchFee) revert InsufficientFee();
+        if (msg.value != launchFee) revert InsufficientFee();
         if (paymentToken != address(0) && !allowedTokens[paymentToken]) revert TokenNotAllowed();
 
         store = address(new StoreEscrow(merchant, paymentToken, price, merchantPubKey, fulfillmentSchemaHash));

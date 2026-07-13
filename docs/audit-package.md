@@ -60,9 +60,9 @@ is a valid finding:
    even if mis-allowlisted).
 6. **A hostile buyer cannot brick anything:** a reverting/reentrant recipient degrades their
    ETH refund to a pull-claim (`pendingRefunds` / `claimRefund`) and affects no other order.
-7. **Factory fee handling:** `deployStore` requires `msg.value >= launchFee` and forwards the
-   full `msg.value` to the treasury atomically; the factory never accrues a balance (it has no
-   receive/fallback).
+7. **Factory fee handling:** `deployStore` requires `msg.value == launchFee` (exact match, so a
+   caller holding a stale fee reverts instead of overpaying after a fee change) and forwards it
+   to the treasury atomically; the factory never accrues a balance (it has no receive/fallback).
 8. **Event completeness:** every state change emits an event; the off-chain system (indexer,
    dashboards) is reconstructed entirely from events, so missing/wrong events are findings too.
 

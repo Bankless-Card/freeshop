@@ -81,10 +81,19 @@ contract StorefrontFactoryTest is Test {
         factory.deployStore{value: LAUNCH_FEE - 1}(merchant, address(0), PRICE, PUBKEY, SCHEMA_HASH);
     }
 
-    function test_deployStore_forwardsExcessToTreasury() public {
-        vm.prank(merchant);
+    function test_deployStore_rejectsOverpaidFee() public {
+        vm.startPrank(merchant);
+        vm.expectRevert(StorefrontFactory.InsufficientFee.selector);
+        factory.deployStore{value: LAUNCH_FEE + 1}(merchant, address(0), PRICE, PUBKEY, SCHEMA_HASH);
+        vm.expectRevert(StorefrontFactory.InsufficientFee.selector);
         factory.deployStore{value: LAUNCH_FEE * 3}(merchant, address(0), PRICE, PUBKEY, SCHEMA_HASH);
-        assertEq(treasury.balance, LAUNCH_FEE * 3);
+        vm.stopPrank();
+    }
+
+    function test_deployStore_holdsNoBalance() public {
+        vm.prank(merchant);
+        factory.deployStore{value: LAUNCH_FEE}(merchant, address(0), PRICE, PUBKEY, SCHEMA_HASH);
+        assertEq(treasury.balance, LAUNCH_FEE);
         assertEq(address(factory).balance, 0);
     }
 
