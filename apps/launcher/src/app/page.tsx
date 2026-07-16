@@ -76,7 +76,7 @@ export default function Home() {
   return (
     <>
       <section className="hero reveal">
-        <p className="eyebrow">Sovereign e-commerce </p>
+        <p className="eyebrow">Borderless, uncensorable e-commerce </p>
         <h1>Own your storefront.  Own your business.</h1>
         <p>
           Most online business use 2-3 intermediaries to get paid (ex. Shopify, Etsy, Stripe, Paypal).
