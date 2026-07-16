@@ -25,6 +25,30 @@ let chain: Chain;
 const state: WalletState = {};
 const listeners = new Set<Listener>();
 
+/**
+ * Injected providers have no reliable programmatic disconnect, so an explicit disconnect is
+ * remembered here — otherwise the silent eth_accounts restore on the next load would undo it.
+ */
+const DISCONNECT_FLAG = "freeshop:wallet-disconnected";
+let explicitlyDisconnected = false;
+
+function readDisconnectFlag(): boolean {
+  try {
+    return localStorage.getItem(DISCONNECT_FLAG) !== null;
+  } catch {
+    return false; // storage unavailable (privacy mode) — fall back to session-only behavior
+  }
+}
+
+function writeDisconnectFlag(disconnected: boolean): void {
+  try {
+    if (disconnected) localStorage.setItem(DISCONNECT_FLAG, "1");
+    else localStorage.removeItem(DISCONNECT_FLAG);
+  } catch {
+    /* storage unavailable — the in-memory flag still covers this page's lifetime */
+  }
+}
+
 function notify() {
   for (const listener of listeners) listener({ ...state });
 }
@@ -52,8 +76,12 @@ export async function initWallet(targetChain: Chain): Promise<void> {
   provider = (window as { ethereum?: EIP1193Provider }).ethereum;
   if (!provider) return;
   client = createWalletClient({ chain, transport: custom(provider) });
+  explicitlyDisconnected = readDisconnectFlag();
 
   provider.on("accountsChanged", (accounts) => {
+    // Some wallets emit this on their own initialization; honor an explicit disconnect until
+    // the user presses connect again.
+    if (explicitlyDisconnected) return;
     state.address = (accounts as Hex[])[0];
     notify();
   });
@@ -62,10 +90,13 @@ export async function initWallet(targetChain: Chain): Promise<void> {
     notify();
   });
 
-  // Restore an existing connection silently (no popup).
+  // Restore an existing connection silently (no popup) — unless the user explicitly
+  // disconnected last visit.
   try {
-    const accounts = (await provider.request({ method: "eth_accounts" })) as Hex[];
-    state.address = accounts[0];
+    if (!explicitlyDisconnected) {
+      const accounts = (await provider.request({ method: "eth_accounts" })) as Hex[];
+      state.address = accounts[0];
+    }
     state.chainId = Number(await provider.request({ method: "eth_chainId" }));
   } catch {
     /* wallet locked or unhappy — stay disconnected */
@@ -75,6 +106,8 @@ export async function initWallet(targetChain: Chain): Promise<void> {
 
 export async function connect(): Promise<void> {
   if (!client) throw new Error("no wallet detected — install one to continue");
+  explicitlyDisconnected = false;
+  writeDisconnectFlag(false);
   const [address] = await client.requestAddresses();
   state.address = address;
   state.chainId = Number(await provider!.request({ method: "eth_chainId" }));
@@ -82,7 +115,13 @@ export async function connect(): Promise<void> {
 }
 
 export function disconnect(): void {
-  // Injected providers have no programmatic disconnect; forgetting locally matches wagmi.
+  // Remember the choice so the silent restore on the next load doesn't undo it, and ask the
+  // wallet to revoke the site's permission where supported (MetaMask) — best-effort.
+  explicitlyDisconnected = true;
+  writeDisconnectFlag(true);
+  void provider
+    ?.request({ method: "wallet_revokePermissions", params: [{ eth_accounts: {} }] } as never)
+    .catch(() => {});
   state.address = undefined;
   notify();
 }
