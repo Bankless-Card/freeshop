@@ -173,7 +173,7 @@ export default function StoreDetail() {
   return (
     <div className="reveal">
       <h1 className="section-title" style={{ marginTop: 40 }}>
-        <span className="index">SHOP</span> Storefront files
+        Shop Info
       </h1>
       <dl className="rows">
         <div>
@@ -198,7 +198,7 @@ export default function StoreDetail() {
             {saved.isError
               ? "could not be loaded"
               : saved.data
-                ? "on file — edit below and re-download any time"
+                ? "on file — re-download any time from below"
                 : "none on file — rebuild it below"}
           </dd>
         </div>
@@ -220,7 +220,7 @@ export default function StoreDetail() {
 
       <section className="section-block">
         <h2 className="section-title">
-          <span className="index">01</span> Analytics
+          Analytics
         </h2>
         {analytics.isError ? (
           <div className="error-box">
@@ -237,14 +237,14 @@ export default function StoreDetail() {
 
       <section className="section-block">
         <h2 className="section-title">
-          <span className="index">02</span> Orders
+          Orders
         </h2>
         <OrdersTable store={storeAddress} symbol={symbol} decimals={decimals} isOwner={!notOwner} />
       </section>
 
       <section className="section-block">
         <h2 className="section-title">
-          <span className="index">03</span> Withdraw
+          Withdraw
         </h2>
         <WithdrawPanel
           store={storeAddress}
@@ -256,39 +256,87 @@ export default function StoreDetail() {
 
       <div className="card" style={{ marginTop: 24 }}>
         <h2 className="section-title">
-          <span className="index">04</span> Storefront files — product
+          Storefront files
         </h2>
-        <div className="field">
-          <label className="eyebrow" htmlFor="name">
-            Product name *
-          </label>
-          <input id="name" value={name} onChange={(e) => setName(e.target.value)} />
-        </div>
-        <div className="field">
-          <label className="eyebrow" htmlFor="desc">
-            Description
-          </label>
-          <textarea id="desc" value={description} onChange={(e) => setDescription(e.target.value)} />
-        </div>
-        <div className="field">
-          <label className="eyebrow" htmlFor="img">
-            Image URL
-          </label>
-          <input id="img" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https:// or leave blank" />
-        </div>
+        {saved.data ? (
+          <>
+            {/* Everything here is a saved copy that only breaks if edited wrongly — the form is
+                immutable on-chain and product copy belongs to the merchant's own site — so show
+                it read-only instead of inviting a mistake. */}
+            <p style={{ marginTop: 0, fontSize: 14 }}>
+              The saved copy of your storefront&apos;s configuration — it ships inside the
+              downloads below, and your live site reads its own copy
+              (<span className="mono">store.config.json</span>), which you can hand-edit on your
+              host any time. The one exception is the order form: it was committed on-chain (as a
+              hash) when the shop launched and cannot be changed.
+            </p>
 
-        <h2 className="section-title" style={{ marginTop: 28 }}>
-          <span className="index">04</span> Storefront files — order form
-        </h2>
-        {!saved.data && (
-          <p style={{ marginTop: 0, fontSize: 14 }}>
-            No saved copy of this shop&apos;s form exists, so it must match what you chose at
-            launch <em>exactly</em> — same fields, same order, same labels, keys, types, required
-            flags, and placeholders. The indicator below compares against the commitment recorded
-            on-chain at deploy.
-          </p>
+            <p className="eyebrow">Product</p>
+            <dl className="rows">
+              <div>
+                <dt>name</dt>
+                <dd>{name}</dd>
+              </div>
+              <div>
+                <dt>description</dt>
+                <dd style={{ whiteSpace: "pre-wrap" }}>{description || "—"}</dd>
+              </div>
+              <div>
+                <dt>image</dt>
+                <dd className="mono" style={{ fontSize: 13 }}>{imageUrl || "default placeholder"}</dd>
+              </div>
+            </dl>
+
+            <p className="eyebrow" style={{ marginTop: 24 }}>Order form — committed on-chain</p>
+            <dl className="rows">
+              {fields.map((field) => (
+                <div key={field.name}>
+                  <dt>{field.label}</dt>
+                  <dd>
+                    <span className="mono" style={{ fontSize: 13 }}>
+                      {field.type}
+                      {field.required ? " · required" : " · optional"}
+                      {field.placeholder ? ` · "${field.placeholder}"` : ""}
+                    </span>
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </>
+        ) : (
+          <>
+            <p style={{ marginTop: 0, fontSize: 14 }}>
+              We have no saved copy of this shop&apos;s files, so they must be reconstructed. The
+              product copy is yours to re-write freely — but the order form must match what you
+              chose at launch <em>exactly</em>: same fields, same order, same labels, keys, types,
+              required flags, and placeholders. The indicator below compares against the
+              commitment recorded on-chain at deploy.
+            </p>
+
+            <p className="eyebrow">Product</p>
+            <div className="field">
+              <label className="eyebrow" htmlFor="name">
+                Product name *
+              </label>
+              <input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+            <div className="field">
+              <label className="eyebrow" htmlFor="desc">
+                Description
+              </label>
+              <textarea id="desc" value={description} onChange={(e) => setDescription(e.target.value)} />
+            </div>
+            <div className="field">
+              <label className="eyebrow" htmlFor="img">
+                Image URL
+              </label>
+              <input id="img" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https:// or leave blank" />
+            </div>
+
+            <p className="eyebrow" style={{ marginTop: 24 }}>Order form — committed on-chain</p>
+            <SchemaBuilder fields={fields} onChange={setFields} />
+          </>
         )}
-        <SchemaBuilder fields={fields} onChange={setFields} />
 
         {onChainSchemaHash &&
           (schemaMatches ? (
