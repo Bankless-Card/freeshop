@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "pnpm --filter @freeshop/storefront build && pnpm prepare-template && next build",
     "start": "next start",
     "prepare-template": "node scripts/prepare-template.mjs"
   },
