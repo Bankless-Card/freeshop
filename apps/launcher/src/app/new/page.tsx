@@ -128,7 +128,15 @@ function ProductStep({
   const assets = paymentAssets();
   const priceOk = /^\d+(\.\d+)?$/.test(draft.priceInput) && Number(draft.priceInput) > 0;
   const payoutOk = draft.payoutAddress === "" || isAddress(draft.payoutAddress);
-  const ready = draft.name.trim().length > 0 && priceOk && payoutOk && (draft.payoutAddress !== "" || !!connected);
+  // Grayed-out placeholders are examples, not values — spell out what's still needed so a
+  // disabled Next button never leaves the user guessing.
+  const missing = [
+    draft.name.trim().length === 0 && "a product name",
+    !priceOk && `a price in ${draft.asset.symbol}`,
+    !payoutOk && "a valid payout address",
+    payoutOk && draft.payoutAddress === "" && !connected && "a payout address (or connect a wallet)",
+  ].filter(Boolean) as string[];
+  const ready = missing.length === 0;
 
   return (
     <div className="card reveal">
@@ -196,14 +204,14 @@ function ProductStep({
           inputMode="decimal"
           value={draft.priceInput}
           onChange={(e) => patch({ priceInput: e.target.value })}
-          placeholder={draft.asset.key === "ETH" ? "0.05" : "25"}
+          placeholder={draft.asset.key === "ETH" ? "e.g. 0.05" : "e.g. 25"}
         />
         {!priceOk && draft.priceInput !== "" && <p className="field__error">Enter a positive number</p>}
       </div>
 
       <div className="field">
         <label className="eyebrow" htmlFor="payout">
-          Payout address
+          Payout address <span style={{ textTransform: "none", letterSpacing: 0 }}>(optional — defaults to your connected wallet)</span>
         </label>
         <input
           id="payout"
@@ -218,7 +226,12 @@ function ProductStep({
         </p>
       </div>
 
-      <div className="wizard-nav">
+      {!ready && (
+        <p className="field__hint" style={{ margin: "16px 0 0", textAlign: "right" }}>
+          Still needed: {missing.join(" · ")}
+        </p>
+      )}
+      <div className="wizard-nav" style={!ready ? { marginTop: 8 } : undefined}>
         <span />
         <button type="button" className="btn btn--ink" disabled={!ready} onClick={onNext}>
           Next: order form
@@ -249,9 +262,8 @@ function FormStep({
         <span className="index">02</span> What do you need from buyers?
       </h1>
       <p style={{ marginTop: 0, fontSize: 14.5 }}>
-        These fields become your checkout form. Buyers&apos; answers are encrypted in their browser
-        to your key — no plaintext ever touches a server, ours included. Keep it lean: this data
-        rides inside the payment transaction, and bytes cost gas.
+        These fields become your checkout form. Buyers&apos; answers are encrypted and attached to the payment transaction —  
+        only your wallet can decrypt.  Keep it lean: the more info, the more gas your customers will have to pay.
       </p>
 
       <SchemaBuilder fields={draft.fields} onChange={(fields) => patch({ fields })} />
@@ -300,7 +312,7 @@ function KeyStep({
         <span className="index">03</span> Create your encryption key
       </h1>
       <p style={{ marginTop: 0, fontSize: 14.5 }}>
-        Buyers encrypt their order details to a key only you hold. It is derived from a wallet
+        Customer data from the previous step is secured using am encryption key derived from your wallet
         signature — sign the same message again any time, from any device, and the same key comes
         back. <strong>There is no file to download and nothing to back up.</strong>
       </p>
@@ -308,7 +320,7 @@ function KeyStep({
       <div className="note">
         <span>🔑</span>
         <span>
-          The key belongs to the wallet that signs, so sign with the wallet you will use to read
+          Sign with the wallet you will use to read
           orders in the dashboard. Keep that wallet: lose it and past orders become unreadable —
           no one, including us, can recover them.
         </span>
@@ -330,9 +342,11 @@ function KeyStep({
           </div>
         </dl>
       ) : (
-        <button type="button" className="btn btn--ink" disabled={isPending} onClick={derive}>
-          {isPending ? "Check your wallet…" : "Sign to create key"}
-        </button>
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+          <button type="button" className="btn btn--ink" disabled={isPending} onClick={derive}>
+            {isPending ? "Check your wallet…" : "Sign to create key"}
+          </button>
+        </div>
       )}
       {error && <div className="error-box">{error}</div>}
 
