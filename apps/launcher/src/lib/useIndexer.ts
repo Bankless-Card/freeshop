@@ -63,6 +63,27 @@ export function useStoreAnalytics(store: `0x${string}` | undefined) {
   });
 }
 
+export interface OpenOrder {
+  store: `0x${string}`;
+  orderId: string;
+  buyer: `0x${string}`;
+  amount: string;
+  token: `0x${string}`;
+  status: "PAID" | "CANCELLED";
+  paidAt: number;
+}
+
+/** Orders across all the merchant's shops that still need input (not fulfilled, not refunded). */
+export function useMerchantOpenOrders(merchant: `0x${string}` | undefined) {
+  return useQuery<{ orders: OpenOrder[] }>({
+    queryKey: ["indexer", "merchant-open-orders", merchant],
+    enabled: !!merchant,
+    retry: 1,
+    refetchInterval: 15_000,
+    queryFn: () => fetchIndexer(`/merchants/${merchant}/open-orders`),
+  });
+}
+
 export function useStoreOrders(store: `0x${string}` | undefined) {
   return useQuery<{ orders: IndexedOrder[] }>({
     queryKey: ["indexer", "store-orders", store],

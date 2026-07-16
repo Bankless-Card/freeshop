@@ -8,13 +8,14 @@ import { AnalyticsPanel } from "@/components/Analytics";
 import { launcherChain } from "@/lib/chains";
 import { publicEnv } from "@/lib/env";
 import { useAuth } from "@/lib/useAuth";
-import { useMerchantAnalytics } from "@/lib/useIndexer";
+import { useMerchantAnalytics, useMerchantOpenOrders } from "@/lib/useIndexer";
 
 export default function Stores() {
   const { me } = useAuth();
   const chain = launcherChain();
   const explorer = chain.blockExplorers?.default?.url;
   const analytics = useMerchantAnalytics(me.data?.address);
+  const openOrders = useMerchantOpenOrders(me.data?.address);
 
   // The factory registry is the source of truth for "which stores are mine"...
   const { data: chainStores, isPending: chainPending } = useReadContract({
@@ -73,6 +74,40 @@ export default function Stores() {
           <AnalyticsPanel rollup={analytics.data.aggregate} />
         </div>
       ) : null}
+
+      <h2 className="section-title" style={{ marginTop: 36 }}>
+        <span className="index">ORDERS</span> Needs your attention
+      </h2>
+      {openOrders.isError ? (
+        <p className="mono" style={{ fontSize: 13 }}>
+          Open orders are unavailable while the indexer is offline.
+        </p>
+      ) : !openOrders.data ? (
+        <p className="mono" style={{ fontSize: 13 }}>Checking orders…</p>
+      ) : openOrders.data.orders.length === 0 ? (
+        <p style={{ fontSize: 14.5 }}>There are no orders which require your attention.</p>
+      ) : (
+        openOrders.data.orders.map((order) => {
+          const isEth = order.token === ETH_SENTINEL;
+          return (
+            <div className="store-row" key={`${order.store}-${order.orderId}`}>
+              <span>
+                № {order.orderId} · <span className={`badge badge--${order.status.toLowerCase()}`}>{order.status}</span>
+                {order.status === "CANCELLED" ? " — awaiting refund" : " — awaiting fulfilment"}
+                <br />
+                <span className="ink-soft">
+                  {formatUnits(BigInt(order.amount), isEth ? 18 : 6)} {isEth ? "ETH" : "USDC"} ·{" "}
+                  {new Date(order.paidAt * 1000).toLocaleDateString()} · shop{" "}
+                  <span className="mono">{`${order.store.slice(0, 6)}…${order.store.slice(-4)}`}</span>
+                </span>
+              </span>
+              <Link href={`/stores/${order.store}`} className="btn btn--ghost">
+                Manage
+              </Link>
+            </div>
+          );
+        })
+      )}
 
       <h2 className="section-title" style={{ marginTop: 36 }}>
         <span className="index">LIST</span> Your shops

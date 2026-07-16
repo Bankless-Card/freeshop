@@ -228,6 +228,18 @@ assert.equal(byId["2"].status, "FULFILLED", "StatusChanged indexed");
 assert.equal(byId["3"].status, "REFUNDED", "Refunded indexed");
 assert.equal(byId["1"].buyer.toLowerCase(), buyerA.account.address.toLowerCase());
 
+// Open orders (need merchant input): everything not FULFILLED/REFUNDED, across both stores.
+const openOrders = await api(`/merchants/${merchant.account.address}/open-orders`);
+assert.equal(openOrders.orders.length, 2, "open orders = the two PAID orders");
+assert.ok(
+  openOrders.orders.every((o) => o.status === "PAID" || o.status === "CANCELLED"),
+  "open orders exclude FULFILLED and REFUNDED",
+);
+assert.ok(
+  new Set(openOrders.orders.map((o) => o.store)).size === 2,
+  "open orders span both stores",
+);
+
 // Decrypt order 1's blob straight from the API response with the merchant's derived key.
 {
   const payload = hexToBytes(byId["1"].encryptedFulfillment);

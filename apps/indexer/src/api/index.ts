@@ -1,7 +1,7 @@
 import { db } from "ponder:api";
 import schema from "ponder:schema";
 import { Hono } from "hono";
-import { and, count, countDistinct, desc, eq, gte, sql } from "drizzle-orm";
+import { and, count, countDistinct, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { isAddress } from "viem";
 
 /**
@@ -102,6 +102,35 @@ app.get("/merchants/:address/analytics", async (c) => {
         refunds: Number(stats?.refunds ?? 0),
       };
     }),
+  });
+});
+
+/**
+ * Orders across all the merchant's stores that still need merchant input: not fulfilled and
+ * not refunded (PAID awaiting fulfilment, CANCELLED awaiting refund).
+ */
+app.get("/merchants/:address/open-orders", async (c) => {
+  const address = c.req.param("address");
+  if (!isAddress(address)) return c.json({ error: "bad address" }, 400);
+  const limit = Math.min(Number(c.req.query("limit") ?? 200), 500);
+
+  const rows = await db
+    .select()
+    .from(schema.orders)
+    .where(and(eq(schema.orders.merchant, lower(address)), inArray(schema.orders.status, ["PAID", "CANCELLED"])))
+    .orderBy(desc(schema.orders.paidAt))
+    .limit(limit);
+
+  return c.json({
+    orders: rows.map((o) => ({
+      store: o.store,
+      orderId: o.orderId.toString(),
+      buyer: o.buyer,
+      amount: o.amount.toString(),
+      token: o.token,
+      status: o.status,
+      paidAt: Number(o.paidAt),
+    })),
   });
 });
 
