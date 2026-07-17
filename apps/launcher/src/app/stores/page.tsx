@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { formatUnits } from "viem";
 import { useReadContract, useReadContracts } from "wagmi";
@@ -16,6 +17,17 @@ export default function Stores() {
   const explorer = chain.blockExplorers?.default?.url;
   const analytics = useMerchantAnalytics(me.data?.address);
   const openOrders = useMerchantOpenOrders(me.data?.address);
+  // Product names come from the saved configs (they exist nowhere on-chain).
+  const names = useQuery({
+    queryKey: ["store-names"],
+    enabled: !!me.data?.authenticated,
+    queryFn: async () => {
+      const response = await fetch("/api/stores");
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return (await response.json()) as { names: Record<string, string | null> };
+    },
+  });
+  const nameFor = (address: string) => names.data?.names[address.toLowerCase()] ?? undefined;
 
   // The factory registry is the source of truth for "which stores are mine"...
   const { data: chainStores, isPending: chainPending } = useReadContract({
@@ -97,8 +109,10 @@ export default function Stores() {
                 <br />
                 <span className="ink-soft">
                   {formatUnits(BigInt(order.amount), isEth ? 18 : 6)} {isEth ? "ETH" : "USDC"} ·{" "}
-                  {new Date(order.paidAt * 1000).toLocaleDateString()} · shop{" "}
-                  <span className="mono">{`${order.store.slice(0, 6)}…${order.store.slice(-4)}`}</span>
+                  {new Date(order.paidAt * 1000).toLocaleDateString()} ·{" "}
+                  {nameFor(order.store) ?? (
+                    <span className="mono">{`${order.store.slice(0, 6)}…${order.store.slice(-4)}`}</span>
+                  )}
                 </span>
               </span>
               <Link href={`/stores/${order.store}`} className="btn btn--ghost">
@@ -146,12 +160,14 @@ export default function Stores() {
         return (
           <div className="store-row" key={store}>
             <span>
+              <strong>{nameFor(store) ?? "Unnamed shop"}</strong>
+              <br />
               {explorer ? (
-                <a href={`${explorer}/address/${store}`} target="_blank" rel="noreferrer">
+                <a className="mono" style={{ fontSize: 12 }} href={`${explorer}/address/${store}`} target="_blank" rel="noreferrer">
                   {store}
                 </a>
               ) : (
-                store
+                <span className="mono" style={{ fontSize: 12 }}>{store}</span>
               )}
               <br />
               <span className="ink-soft">
