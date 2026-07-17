@@ -41,3 +41,4 @@ contracts/aderyn-report.md
 
 # claude harness state
 .claude/worktrees/
+scripts/deploy/deploy.env

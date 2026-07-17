@@ -36,6 +36,26 @@ Two services run on the server: the **launcher** (Next.js, the only app with a b
 **indexer** (Ponder). Contracts are deployed once from your own machine. Merchants' storefronts
 are self-hosted and never touch this server.
 
+### Automated setup & deploy (recommended)
+
+After deploying the contracts (step 1 below), everything else is one idempotent command against
+a bare Ubuntu box:
+
+```sh
+cp scripts/deploy/deploy.env.example scripts/deploy/deploy.env   # fill in server, domain, RPC, factory
+scripts/deploy/deploy.sh
+```
+
+The first run provisions the machine — swap if RAM is low, Node 24, pnpm, Postgres (role + both
+databases), Caddy with TLS for your domain, systemd units, env files generated from
+`deploy.env` — then builds and starts both services with health checks. Every later run rsyncs
+the current working tree, converges anything that drifted, rebuilds, and restarts. Blank
+secrets (`DB_PASSWORD`, `SESSION_SECRET`) are generated on first run and written back into your
+gitignored `deploy.env`, which is the single source of truth pushed to the server.
+
+The manual steps below do the same thing piece by piece, and double as documentation for what
+the script manages.
+
 A 2 GB DigitalOcean/Hetzner box (1 shared vCPU) is plenty; on 1 GB add swap first —
 `next build` is the only memory-hungry step:
 
@@ -94,6 +114,7 @@ INDEXER_RPC_URL=https://...              # your keyed RPC
 FACTORY_ADDRESS=0x...                    # from step 1
 START_BLOCK=...                          # factory deploy block from step 1
 DATABASE_URL=postgres://freeshop:...@localhost/freeshop_indexer
+DATABASE_SCHEMA=freeshop                 # required when Ponder runs on Postgres
 ```
 
 `/opt/freeshop/apps/launcher/.env.production` — note that `NEXT_PUBLIC_*` values are **baked in

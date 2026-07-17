@@ -118,7 +118,7 @@ Done without owner input:
 - [x] **Exact launch-fee payment (2026-07-10)**: `deployStore` now requires `msg.value == launchFee` (was `>=` with excess kept by treasury). Rationale: the launcher UI caches the fee at page load, so an owner fee *decrease* (e.g. a promo) would make stale pages silently overpay with the excess kept. Now stale payments revert (`InsufficientFee`) and the UI re-reads the fee right before submitting. Fee-change runbook added to `contracts/README.md`; audit-package property 7 updated. Done pre-audit so the freeze commit includes it.
 
 Blocked on owner:
-- [ ] **Sepolia deploy + Etherscan verify** — needs funded deployer key, `SEPOLIA_RPC_URL`, `ETHERSCAN_API_KEY` (command in `contracts/README.md`); unlocks the testnet passes of M2–M4 definitions of done and the USDC checkout path
+- [x] **Sepolia deploy + Etherscan verify (2026-07-17)** — factory `0x3C4AC33232f38be832B023Af03b0309e9c7e8688`, deploy block 11292764, owner/treasury = deployer wallet, Sepolia USDC allowlisted, source verified. Note: deployed with launchFee 0.001 ETH (stray LAUNCH_FEE env at deploy time; owner may setLaunchFee to the 0.005 default). Launcher + indexer live on a 1 GB VPS via `scripts/deploy/deploy.sh` (idempotent provision+deploy; gotchas fixed in the process: NODE_OPTIONS heap for next build on small boxes, Ponder-on-Postgres needs DATABASE_SCHEMA). Next: testnet passes of the M2–M4 definitions of done + USDC checkout path.
 - [ ] **Independent audit** — owner selects/engages a firm (send them `docs/audit-package.md`); then address findings + re-run analyzers on the freeze commit
 - [ ] Testnet dry-runs with small real amounts, end to end
 - [ ] Mainnet deploy of factory; Etherscan verification (green check)
