@@ -8,7 +8,7 @@ import {StoreEscrow} from "./StoreEscrow.sol";
 /// @title StorefrontFactory — deploys per-product StoreEscrow contracts
 /// @notice Charges the platform launch fee, validates the payment asset against the ERC-20
 ///         allowlist (native ETH is always available and never allowlisted), and keeps the
-///         on-chain merchant → stores registry that powers the dashboard's store list.
+///         on-chain admin → stores registry that powers the dashboard's store list.
 contract StorefrontFactory is Ownable {
     /// @notice Fee (wei) required to deploy a store. Owner-adjustable; affects future deploys only.
     uint256 public launchFee;
@@ -18,11 +18,12 @@ contract StorefrontFactory is Ownable {
     ///         (fee-on-transfer, reentrant callbacks, non-standard returns).
     mapping(address token => bool) public allowedTokens;
 
-    mapping(address merchant => address[]) private _storesByMerchant;
+    mapping(address admin => address[]) private _storesByAdmin;
 
     event StoreDeployed(
-        address indexed merchant,
+        address indexed admin,
         address indexed store,
+        address payoutRecipient,
         address paymentToken,
         uint256 price,
         bytes32 merchantPubKey,
@@ -44,13 +45,15 @@ contract StorefrontFactory is Ownable {
         emit LaunchFeeChanged(0, launchFee_);
     }
 
-    /// @notice Deploys a StoreEscrow. `merchant` is the immutable payout address — it need not be
-    ///         msg.sender, so a merchant can launch from one wallet and be paid to another.
-    ///         `paymentToken` is address(0) for native ETH or an allowlisted ERC-20.
-    ///         msg.value must equal launchFee exactly and is forwarded to the treasury; the
-    ///         exact-match check keeps callers holding a stale fee from overpaying after a change.
+    /// @notice Deploys a StoreEscrow. The caller becomes the store's immutable `admin` — the wallet
+    ///         that fulfils/refunds/withdraws and whose signature derives the decryption key; it is
+    ///         never a parameter, so admin and key can't diverge. `payoutRecipient` is only where
+    ///         withdrawals land (may be a cold wallet). `paymentToken` is address(0) for native ETH
+    ///         or an allowlisted ERC-20. msg.value must equal launchFee exactly and is forwarded to
+    ///         the treasury; the exact-match check keeps callers holding a stale fee from overpaying
+    ///         after a change.
     function deployStore(
-        address merchant,
+        address payoutRecipient,
         address paymentToken,
         uint256 price,
         bytes32 merchantPubKey,
@@ -59,21 +62,23 @@ contract StorefrontFactory is Ownable {
         if (msg.value != launchFee) revert InsufficientFee();
         if (paymentToken != address(0) && !allowedTokens[paymentToken]) revert TokenNotAllowed();
 
-        store = address(new StoreEscrow(merchant, paymentToken, price, merchantPubKey, fulfillmentSchemaHash));
-        _storesByMerchant[merchant].push(store);
-        emit StoreDeployed(merchant, store, paymentToken, price, merchantPubKey, fulfillmentSchemaHash);
+        store = address(
+            new StoreEscrow(msg.sender, payoutRecipient, paymentToken, price, merchantPubKey, fulfillmentSchemaHash)
+        );
+        _storesByAdmin[msg.sender].push(store);
+        emit StoreDeployed(msg.sender, store, payoutRecipient, paymentToken, price, merchantPubKey, fulfillmentSchemaHash);
 
         if (msg.value > 0) {
             Address.sendValue(payable(treasury), msg.value);
         }
     }
 
-    function getStores(address merchant) external view returns (address[] memory) {
-        return _storesByMerchant[merchant];
+    function getStores(address admin) external view returns (address[] memory) {
+        return _storesByAdmin[admin];
     }
 
-    function storeCount(address merchant) external view returns (uint256) {
-        return _storesByMerchant[merchant].length;
+    function storeCount(address admin) external view returns (uint256) {
+        return _storesByAdmin[admin].length;
     }
 
     function setLaunchFee(uint256 newFee) external onlyOwner {

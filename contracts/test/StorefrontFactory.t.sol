@@ -13,7 +13,8 @@ contract StorefrontFactoryTest is Test {
 
     address internal owner = makeAddr("owner");
     address internal treasury = makeAddr("treasury");
-    address internal merchant = makeAddr("merchant");
+    address internal admin = makeAddr("admin");
+    address internal payout = makeAddr("payout");
     address internal stranger = makeAddr("stranger");
 
     uint256 internal constant LAUNCH_FEE = 0.01 ether;
@@ -26,7 +27,7 @@ contract StorefrontFactoryTest is Test {
         usdc = new MockUSDC();
         vm.prank(owner);
         factory.setTokenAllowed(address(usdc), true);
-        vm.deal(merchant, 10 ether);
+        vm.deal(admin, 10 ether);
     }
 
     // ---- constructor ----
@@ -45,11 +46,12 @@ contract StorefrontFactoryTest is Test {
     // ---- deployStore ----
 
     function test_deployStore_ethStore() public {
-        vm.prank(merchant);
-        address store = factory.deployStore{value: LAUNCH_FEE}(merchant, address(0), PRICE, PUBKEY, SCHEMA_HASH);
+        vm.prank(admin);
+        address store = factory.deployStore{value: LAUNCH_FEE}(payout, address(0), PRICE, PUBKEY, SCHEMA_HASH);
 
         StoreEscrow escrow = StoreEscrow(payable(store));
-        assertEq(escrow.merchant(), merchant);
+        assertEq(escrow.admin(), admin);
+        assertEq(escrow.payoutRecipient(), payout);
         assertEq(escrow.paymentToken(), address(0));
         assertEq(escrow.price(), PRICE);
         assertEq(escrow.merchantPubKey(), PUBKEY);
@@ -57,68 +59,71 @@ contract StorefrontFactoryTest is Test {
         assertEq(escrow.factory(), address(factory));
 
         assertEq(treasury.balance, LAUNCH_FEE);
-        assertEq(factory.storeCount(merchant), 1);
-        assertEq(factory.getStores(merchant)[0], store);
+        assertEq(factory.storeCount(admin), 1);
+        assertEq(factory.getStores(admin)[0], store);
     }
 
     function test_deployStore_emitsStoreDeployed() public {
         // The store address isn't known before the call; check every field but that one.
         vm.expectEmit(true, false, true, true);
-        emit StorefrontFactory.StoreDeployed(merchant, address(0), address(0), PRICE, PUBKEY, SCHEMA_HASH);
-        vm.prank(merchant);
-        factory.deployStore{value: LAUNCH_FEE}(merchant, address(0), PRICE, PUBKEY, SCHEMA_HASH);
+        emit StorefrontFactory.StoreDeployed(admin, address(0), payout, address(0), PRICE, PUBKEY, SCHEMA_HASH);
+        vm.prank(admin);
+        factory.deployStore{value: LAUNCH_FEE}(payout, address(0), PRICE, PUBKEY, SCHEMA_HASH);
     }
 
     function test_deployStore_usdcStore() public {
-        vm.prank(merchant);
-        address store = factory.deployStore{value: LAUNCH_FEE}(merchant, address(usdc), PRICE, PUBKEY, SCHEMA_HASH);
+        vm.prank(admin);
+        address store = factory.deployStore{value: LAUNCH_FEE}(admin, address(usdc), PRICE, PUBKEY, SCHEMA_HASH);
         assertEq(StoreEscrow(payable(store)).paymentToken(), address(usdc));
     }
 
     function test_deployStore_rejectsUnderpaidFee() public {
-        vm.prank(merchant);
+        vm.prank(admin);
         vm.expectRevert(StorefrontFactory.InsufficientFee.selector);
-        factory.deployStore{value: LAUNCH_FEE - 1}(merchant, address(0), PRICE, PUBKEY, SCHEMA_HASH);
+        factory.deployStore{value: LAUNCH_FEE - 1}(admin, address(0), PRICE, PUBKEY, SCHEMA_HASH);
     }
 
     function test_deployStore_rejectsOverpaidFee() public {
-        vm.startPrank(merchant);
+        vm.startPrank(admin);
         vm.expectRevert(StorefrontFactory.InsufficientFee.selector);
-        factory.deployStore{value: LAUNCH_FEE + 1}(merchant, address(0), PRICE, PUBKEY, SCHEMA_HASH);
+        factory.deployStore{value: LAUNCH_FEE + 1}(admin, address(0), PRICE, PUBKEY, SCHEMA_HASH);
         vm.expectRevert(StorefrontFactory.InsufficientFee.selector);
-        factory.deployStore{value: LAUNCH_FEE * 3}(merchant, address(0), PRICE, PUBKEY, SCHEMA_HASH);
+        factory.deployStore{value: LAUNCH_FEE * 3}(admin, address(0), PRICE, PUBKEY, SCHEMA_HASH);
         vm.stopPrank();
     }
 
     function test_deployStore_holdsNoBalance() public {
-        vm.prank(merchant);
-        factory.deployStore{value: LAUNCH_FEE}(merchant, address(0), PRICE, PUBKEY, SCHEMA_HASH);
+        vm.prank(admin);
+        factory.deployStore{value: LAUNCH_FEE}(admin, address(0), PRICE, PUBKEY, SCHEMA_HASH);
         assertEq(treasury.balance, LAUNCH_FEE);
         assertEq(address(factory).balance, 0);
     }
 
     function test_deployStore_rejectsNonAllowlistedToken() public {
         MockUSDC rogue = new MockUSDC();
-        vm.prank(merchant);
+        vm.prank(admin);
         vm.expectRevert(StorefrontFactory.TokenNotAllowed.selector);
-        factory.deployStore{value: LAUNCH_FEE}(merchant, address(rogue), PRICE, PUBKEY, SCHEMA_HASH);
+        factory.deployStore{value: LAUNCH_FEE}(admin, address(rogue), PRICE, PUBKEY, SCHEMA_HASH);
     }
 
-    function test_deployStore_merchantMayDifferFromCaller() public {
+    function test_deployStore_adminIsAlwaysCaller() public {
+        // The payout recipient may be any address, but the caller is the admin and owns the
+        // registry entry — a custom payout can never orphan a store under someone else's wallet.
         vm.deal(stranger, 1 ether);
         vm.prank(stranger);
-        address store = factory.deployStore{value: LAUNCH_FEE}(merchant, address(0), PRICE, PUBKEY, SCHEMA_HASH);
-        assertEq(StoreEscrow(payable(store)).merchant(), merchant);
-        assertEq(factory.storeCount(merchant), 1);
-        assertEq(factory.storeCount(stranger), 0);
+        address store = factory.deployStore{value: LAUNCH_FEE}(payout, address(0), PRICE, PUBKEY, SCHEMA_HASH);
+        assertEq(StoreEscrow(payable(store)).admin(), stranger);
+        assertEq(StoreEscrow(payable(store)).payoutRecipient(), payout);
+        assertEq(factory.storeCount(stranger), 1);
+        assertEq(factory.storeCount(payout), 0);
     }
 
     function test_deployStore_registryAccumulates() public {
-        vm.startPrank(merchant);
-        address a = factory.deployStore{value: LAUNCH_FEE}(merchant, address(0), PRICE, PUBKEY, SCHEMA_HASH);
-        address b = factory.deployStore{value: LAUNCH_FEE}(merchant, address(usdc), PRICE, PUBKEY, SCHEMA_HASH);
+        vm.startPrank(admin);
+        address a = factory.deployStore{value: LAUNCH_FEE}(admin, address(0), PRICE, PUBKEY, SCHEMA_HASH);
+        address b = factory.deployStore{value: LAUNCH_FEE}(admin, address(usdc), PRICE, PUBKEY, SCHEMA_HASH);
         vm.stopPrank();
-        address[] memory stores = factory.getStores(merchant);
+        address[] memory stores = factory.getStores(admin);
         assertEq(stores.length, 2);
         assertEq(stores[0], a);
         assertEq(stores[1], b);
@@ -132,10 +137,10 @@ contract StorefrontFactoryTest is Test {
         vm.prank(owner);
         factory.setLaunchFee(0.02 ether);
 
-        vm.startPrank(merchant);
+        vm.startPrank(admin);
         vm.expectRevert(StorefrontFactory.InsufficientFee.selector);
-        factory.deployStore{value: LAUNCH_FEE}(merchant, address(0), PRICE, PUBKEY, SCHEMA_HASH);
-        factory.deployStore{value: 0.02 ether}(merchant, address(0), PRICE, PUBKEY, SCHEMA_HASH);
+        factory.deployStore{value: LAUNCH_FEE}(admin, address(0), PRICE, PUBKEY, SCHEMA_HASH);
+        factory.deployStore{value: 0.02 ether}(admin, address(0), PRICE, PUBKEY, SCHEMA_HASH);
         vm.stopPrank();
     }
 
@@ -153,8 +158,8 @@ contract StorefrontFactoryTest is Test {
         factory.setTreasury(newTreasury);
         assertEq(factory.treasury(), newTreasury);
 
-        vm.prank(merchant);
-        factory.deployStore{value: LAUNCH_FEE}(merchant, address(0), PRICE, PUBKEY, SCHEMA_HASH);
+        vm.prank(admin);
+        factory.deployStore{value: LAUNCH_FEE}(admin, address(0), PRICE, PUBKEY, SCHEMA_HASH);
         assertEq(newTreasury.balance, LAUNCH_FEE);
     }
 
@@ -182,9 +187,9 @@ contract StorefrontFactoryTest is Test {
         factory.setTokenAllowed(address(other), false);
         assertFalse(factory.allowedTokens(address(other)));
 
-        vm.prank(merchant);
+        vm.prank(admin);
         vm.expectRevert(StorefrontFactory.TokenNotAllowed.selector);
-        factory.deployStore{value: LAUNCH_FEE}(merchant, address(other), PRICE, PUBKEY, SCHEMA_HASH);
+        factory.deployStore{value: LAUNCH_FEE}(admin, address(other), PRICE, PUBKEY, SCHEMA_HASH);
     }
 
     function test_setTokenAllowed_rejectsZeroAddress() public {

@@ -72,10 +72,10 @@ app.get("/merchants/:address/analytics", async (c) => {
   const storeRows = await db
     .select()
     .from(schema.stores)
-    .where(eq(schema.stores.merchant, merchant))
+    .where(eq(schema.stores.admin, merchant))
     .orderBy(desc(schema.stores.deployedAt));
 
-  const aggregate = await rollup(eq(schema.orders.merchant, merchant));
+  const aggregate = await rollup(eq(schema.orders.admin, merchant));
 
   const perStore = await db
     .select({
@@ -85,7 +85,7 @@ app.get("/merchants/:address/analytics", async (c) => {
       refunds: sql<number>`count(*) filter (where ${schema.orders.status} = 'REFUNDED')`,
     })
     .from(schema.orders)
-    .where(eq(schema.orders.merchant, merchant))
+    .where(eq(schema.orders.admin, merchant))
     .groupBy(schema.orders.store);
 
   return c.json({
@@ -117,7 +117,7 @@ app.get("/merchants/:address/open-orders", async (c) => {
   const rows = await db
     .select()
     .from(schema.orders)
-    .where(and(eq(schema.orders.merchant, lower(address)), inArray(schema.orders.status, ["PAID", "CANCELLED"])))
+    .where(and(eq(schema.orders.admin, lower(address)), inArray(schema.orders.status, ["PAID", "CANCELLED"])))
     .orderBy(desc(schema.orders.paidAt))
     .limit(limit);
 

@@ -52,18 +52,18 @@ Any other static host works the same way: upload `dist/`.
 ## Your dashboard (`admin.html`)
 
 Open `admin.html` on your deployed store (e.g. `yourstore.com/admin.html`) and connect the
-store's payout wallet: analytics at a glance, every order with its status, one signature to
-decrypt buyer details in your browser, and fulfil / cancel / refund / withdraw buttons.
+shop's admin wallet — the wallet that launched it: analytics at a glance, every order with its
+status, one signature to decrypt buyer details in your browser, and fulfil / cancel / refund /
+withdraw buttons.
 
 - **The wallet gate is a curtain, not a lock** — and that's fine. Everything behind it is
   either already public on the blockchain (order ids, statuses, amounts, buyer addresses) or
-  encrypted. The contract itself rejects merchant actions — including `withdraw` — from any
-  other wallet, and `withdraw` only ever pays your permanent merchant address.
-- **The decryption key never exists on disk.** It is re-derived from your wallet's signature
-  each time you unlock, held in memory, and never sent anywhere. Only sign that message on
-  sites you trust. If you created the store's key with a different wallet than the payout
-  wallet, connect the payout wallet to open the page, then you'll need that other wallet to
-  read order details.
+  encrypted. The contract itself rejects admin actions — including `withdraw` — from any
+  other wallet, and `withdraw` only ever pays your permanent payout address (which needs no
+  powers, so it can be a cold wallet).
+- **The decryption key never exists on disk.** It is re-derived from your admin wallet's
+  signature each time you unlock, held in memory, and never sent anywhere. Only sign that
+  message on sites you trust.
 - `store.config.json`'s `deployBlock` tells the dashboard where to start scanning for order
   events. The launcher fills it in automatically; if your config predates it, add the block
   number your store was deployed in.

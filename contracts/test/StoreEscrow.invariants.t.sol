@@ -9,7 +9,8 @@ import {ToggleBuyer} from "./mocks/Buyers.sol";
 ///      contract boundary so the invariant contract can assert conservation of funds.
 contract EscrowHandler is Test {
     StoreEscrow public store;
-    address public merchant;
+    address public admin;
+    address public payout;
 
     address[] internal eoaBuyers;
     ToggleBuyer public toggleBuyer;
@@ -19,9 +20,10 @@ contract EscrowHandler is Test {
     uint256 public ghostRefundedOut; // pushed refunds + claimed refunds
     uint256 public ghostWithdrawn;
 
-    constructor(StoreEscrow store_, address merchant_) {
+    constructor(StoreEscrow store_, address admin_, address payout_) {
         store = store_;
-        merchant = merchant_;
+        admin = admin_;
+        payout = payout_;
         for (uint256 i = 0; i < 4; i++) {
             eoaBuyers.push(makeAddr(string(abi.encodePacked("buyer", i))));
         }
@@ -48,7 +50,7 @@ contract EscrowHandler is Test {
         uint256 orderId = (orderSeed % count) + 1;
         StoreEscrow.Status target =
             statusSeed % 2 == 0 ? StoreEscrow.Status.FULFILLED : StoreEscrow.Status.CANCELLED;
-        vm.prank(merchant);
+        vm.prank(admin);
         store.setStatus(orderId, target);
     }
 
@@ -63,7 +65,7 @@ contract EscrowHandler is Test {
         (address buyer,,) = store.orders(orderId);
 
         uint256 buyerBefore = buyer.balance;
-        vm.prank(merchant);
+        vm.prank(admin);
         store.refund(orderId);
         // Push succeeded if the buyer balance moved; otherwise it was queued (stays in contract).
         ghostRefundedOut += buyer.balance - buyerBefore;
@@ -78,10 +80,10 @@ contract EscrowHandler is Test {
     }
 
     function withdraw() external {
-        uint256 merchantBefore = merchant.balance;
-        vm.prank(merchant);
+        uint256 payoutBefore = payout.balance;
+        vm.prank(admin);
         store.withdraw();
-        ghostWithdrawn += merchant.balance - merchantBefore;
+        ghostWithdrawn += payout.balance - payoutBefore;
     }
 
     function topUp(uint256 amountSeed) external {
@@ -96,15 +98,16 @@ contract EscrowHandler is Test {
 contract StoreEscrowInvariantTest is Test {
     StoreEscrow internal store;
     EscrowHandler internal handler;
-    address internal merchant = makeAddr("merchant");
+    address internal admin = makeAddr("admin");
+    address internal payout = makeAddr("payout");
 
     function setUp() public {
-        store = new StoreEscrow(merchant, address(0), 0.1 ether, bytes32(uint256(1)), keccak256("schema"));
-        handler = new EscrowHandler(store, merchant);
+        store = new StoreEscrow(admin, payout, address(0), 0.1 ether, bytes32(uint256(1)), keccak256("schema"));
+        handler = new EscrowHandler(store, admin, payout);
         targetContract(address(handler));
     }
 
-    /// Queued refunds are always fully backed: the merchant can never withdraw money owed to buyers.
+    /// Queued refunds are always fully backed: the admin can never withdraw money owed to buyers.
     function invariant_balanceCoversRefundLiability() public view {
         assertGe(address(store).balance, store.totalRefundLiability());
     }

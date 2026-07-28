@@ -64,7 +64,7 @@ beforeEach(() => {
 describe("renderGate", () => {
   it("shows exactly one gate state and hides the panel", () => {
     for (const state of ["connect", "wrong-chain", "wrong-wallet"] as const) {
-      renderGate(state, { connected: "0xabc", merchant: "0xdef" });
+      renderGate(state, { connected: "0xabc", admin: "0xdef" });
       const visible = ["gate-connect", "gate-wrong-chain", "gate-wrong-wallet"].filter(
         (id) => document.getElementById(id)?.hidden === false,
       );

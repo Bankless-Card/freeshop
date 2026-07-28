@@ -4,7 +4,8 @@ export const stores = onchainTable(
   "stores",
   (t) => ({
     address: t.hex().primaryKey(),
-    merchant: t.hex().notNull(),
+    admin: t.hex().notNull(),
+    payoutRecipient: t.hex().notNull(),
     paymentToken: t.hex().notNull(),
     price: t.bigint().notNull(),
     merchantPubKey: t.hex().notNull(),
@@ -12,7 +13,7 @@ export const stores = onchainTable(
     deployedAt: t.bigint().notNull(),
   }),
   (table) => ({
-    merchantIdx: index().on(table.merchant),
+    adminIdx: index().on(table.admin),
   }),
 );
 
@@ -22,8 +23,8 @@ export const orders = onchainTable(
     /** `${store}-${orderId}` */
     id: t.text().primaryKey(),
     store: t.hex().notNull(),
-    /** Denormalized from the store so merchant-wide analytics need no join. */
-    merchant: t.hex().notNull(),
+    /** Denormalized from the store so admin-wide analytics need no join. */
+    admin: t.hex().notNull(),
     orderId: t.bigint().notNull(),
     buyer: t.hex().notNull(),
     amount: t.bigint().notNull(),
@@ -36,7 +37,7 @@ export const orders = onchainTable(
   }),
   (table) => ({
     storeIdx: index().on(table.store),
-    merchantIdx: index().on(table.merchant),
+    adminIdx: index().on(table.admin),
   }),
 );
 
@@ -46,12 +47,12 @@ export const withdrawals = onchainTable(
     /** `${txHash}-${logIndex}` */
     id: t.text().primaryKey(),
     store: t.hex().notNull(),
-    merchant: t.hex().notNull(),
+    admin: t.hex().notNull(),
     caller: t.hex().notNull(),
     amount: t.bigint().notNull(),
     at: t.bigint().notNull(),
   }),
   (table) => ({
-    merchantIdx: index().on(table.merchant),
+    adminIdx: index().on(table.admin),
   }),
 );

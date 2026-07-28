@@ -11,7 +11,7 @@ type Params = { params: Promise<{ address: string }> };
 
 /**
  * Ownership is decided by the chain, not the database: the caller must be the store's
- * immutable on-chain `merchant`. This keeps the saved config readable after account
+ * immutable on-chain `admin`. This keeps the saved config readable after account
  * deletion/re-creation and impossible to claim by anyone else.
  */
 async function authorize(rawAddress: string): Promise<{ store: `0x${string}` } | NextResponse> {
@@ -20,18 +20,18 @@ async function authorize(rawAddress: string): Promise<{ store: `0x${string}` } |
   if (!isAddress(rawAddress)) return NextResponse.json({ error: "bad store address" }, { status: 400 });
   const store = rawAddress.toLowerCase() as `0x${string}`;
 
-  let merchant: string;
+  let admin: string;
   try {
-    merchant = await serverPublicClient().readContract({
+    admin = await serverPublicClient().readContract({
       address: store,
       abi: storeEscrowAbi,
-      functionName: "merchant",
+      functionName: "admin",
     });
   } catch {
     return NextResponse.json({ error: "no store contract at this address" }, { status: 404 });
   }
-  if (merchant.toLowerCase() !== session) {
-    return NextResponse.json({ error: "you are not this store's merchant" }, { status: 403 });
+  if (admin.toLowerCase() !== session) {
+    return NextResponse.json({ error: "you are not this shop's admin" }, { status: 403 });
   }
   return { store };
 }

@@ -10,7 +10,8 @@ import {ToggleBuyer, ReentrantBuyer} from "./mocks/Buyers.sol";
 contract StoreEscrowEthTest is Test {
     StoreEscrow internal store;
 
-    address internal merchant = makeAddr("merchant");
+    address internal admin = makeAddr("admin");
+    address internal payout = makeAddr("payout");
     address internal buyer = makeAddr("buyer");
     address internal stranger = makeAddr("stranger");
 
@@ -20,14 +21,15 @@ contract StoreEscrowEthTest is Test {
     bytes internal constant BLOB = hex"01deadbeef";
 
     function setUp() public {
-        store = new StoreEscrow(merchant, address(0), PRICE, PUBKEY, SCHEMA_HASH);
+        store = new StoreEscrow(admin, payout, address(0), PRICE, PUBKEY, SCHEMA_HASH);
         vm.deal(buyer, 100 ether);
     }
 
     // ---- constructor ----
 
     function test_constructor_setsImmutableConfig() public view {
-        assertEq(store.merchant(), merchant);
+        assertEq(store.admin(), admin);
+        assertEq(store.payoutRecipient(), payout);
         assertEq(store.paymentToken(), address(0));
         assertEq(store.price(), PRICE);
         assertEq(store.merchantPubKey(), PUBKEY);
@@ -36,19 +38,24 @@ contract StoreEscrowEthTest is Test {
         assertEq(store.orderCount(), 0);
     }
 
-    function test_constructor_rejectsZeroMerchant() public {
+    function test_constructor_rejectsZeroAdmin() public {
         vm.expectRevert(StoreEscrow.ZeroAddress.selector);
-        new StoreEscrow(address(0), address(0), PRICE, PUBKEY, SCHEMA_HASH);
+        new StoreEscrow(address(0), payout, address(0), PRICE, PUBKEY, SCHEMA_HASH);
+    }
+
+    function test_constructor_rejectsZeroPayout() public {
+        vm.expectRevert(StoreEscrow.ZeroAddress.selector);
+        new StoreEscrow(admin, address(0), address(0), PRICE, PUBKEY, SCHEMA_HASH);
     }
 
     function test_constructor_rejectsZeroPrice() public {
         vm.expectRevert(StoreEscrow.ZeroPrice.selector);
-        new StoreEscrow(merchant, address(0), 0, PUBKEY, SCHEMA_HASH);
+        new StoreEscrow(admin, payout, address(0), 0, PUBKEY, SCHEMA_HASH);
     }
 
     function test_constructor_rejectsZeroPubKey() public {
         vm.expectRevert(StoreEscrow.ZeroPubKey.selector);
-        new StoreEscrow(merchant, address(0), PRICE, bytes32(0), SCHEMA_HASH);
+        new StoreEscrow(admin, payout, address(0), PRICE, bytes32(0), SCHEMA_HASH);
     }
 
     // ---- pay ----
@@ -91,41 +98,41 @@ contract StoreEscrowEthTest is Test {
         uint256 orderId = _buy();
         vm.expectEmit(true, true, true, true);
         emit StoreEscrow.StatusChanged(orderId, StoreEscrow.Status.PAID, StoreEscrow.Status.FULFILLED);
-        vm.prank(merchant);
+        vm.prank(admin);
         store.setStatus(orderId, StoreEscrow.Status.FULFILLED);
         assertEq(uint8(_status(orderId)), uint8(StoreEscrow.Status.FULFILLED));
     }
 
     function test_setStatus_paidToCancelled() public {
         uint256 orderId = _buy();
-        vm.prank(merchant);
+        vm.prank(admin);
         store.setStatus(orderId, StoreEscrow.Status.CANCELLED);
         assertEq(uint8(_status(orderId)), uint8(StoreEscrow.Status.CANCELLED));
     }
 
-    function test_setStatus_onlyMerchant() public {
+    function test_setStatus_onlyAdmin() public {
         uint256 orderId = _buy();
         vm.prank(stranger);
-        vm.expectRevert(StoreEscrow.NotMerchant.selector);
+        vm.expectRevert(StoreEscrow.NotAdmin.selector);
         store.setStatus(orderId, StoreEscrow.Status.FULFILLED);
     }
 
     function test_setStatus_rejectsNonexistentOrder() public {
-        vm.prank(merchant);
+        vm.prank(admin);
         vm.expectRevert(StoreEscrow.InvalidTransition.selector);
         store.setStatus(42, StoreEscrow.Status.FULFILLED);
     }
 
     function test_setStatus_rejectsRefundedTarget() public {
         uint256 orderId = _buy();
-        vm.prank(merchant);
+        vm.prank(admin);
         vm.expectRevert(StoreEscrow.InvalidTransition.selector);
         store.setStatus(orderId, StoreEscrow.Status.REFUNDED);
     }
 
     function test_setStatus_rejectsLeavingTerminalStatus() public {
         uint256 orderId = _buy();
-        vm.startPrank(merchant);
+        vm.startPrank(admin);
         store.setStatus(orderId, StoreEscrow.Status.FULFILLED);
         vm.expectRevert(StoreEscrow.InvalidTransition.selector);
         store.setStatus(orderId, StoreEscrow.Status.CANCELLED);
@@ -142,7 +149,7 @@ contract StoreEscrowEthTest is Test {
         emit StoreEscrow.StatusChanged(orderId, StoreEscrow.Status.PAID, StoreEscrow.Status.REFUNDED);
         vm.expectEmit(true, true, true, true);
         emit StoreEscrow.Refunded(orderId, buyer, PRICE);
-        vm.prank(merchant);
+        vm.prank(admin);
         store.refund(orderId);
 
         assertEq(buyer.balance, balanceBefore + PRICE);
@@ -152,7 +159,7 @@ contract StoreEscrowEthTest is Test {
 
     function test_refund_allowedAfterFulfilled() public {
         uint256 orderId = _buy();
-        vm.startPrank(merchant);
+        vm.startPrank(admin);
         store.setStatus(orderId, StoreEscrow.Status.FULFILLED);
         store.refund(orderId);
         vm.stopPrank();
@@ -161,7 +168,7 @@ contract StoreEscrowEthTest is Test {
 
     function test_refund_allowedAfterCancelled() public {
         uint256 orderId = _buy();
-        vm.startPrank(merchant);
+        vm.startPrank(admin);
         store.setStatus(orderId, StoreEscrow.Status.CANCELLED);
         store.refund(orderId);
         vm.stopPrank();
@@ -170,7 +177,7 @@ contract StoreEscrowEthTest is Test {
 
     function test_refund_rejectsDoubleRefund() public {
         uint256 orderId = _buy();
-        vm.startPrank(merchant);
+        vm.startPrank(admin);
         store.refund(orderId);
         vm.expectRevert(StoreEscrow.NotRefundable.selector);
         store.refund(orderId);
@@ -178,38 +185,38 @@ contract StoreEscrowEthTest is Test {
     }
 
     function test_refund_rejectsNonexistentOrder() public {
-        vm.prank(merchant);
+        vm.prank(admin);
         vm.expectRevert(StoreEscrow.NotRefundable.selector);
         store.refund(42);
     }
 
-    function test_refund_onlyMerchant() public {
+    function test_refund_onlyAdmin() public {
         uint256 orderId = _buy();
         vm.prank(buyer);
-        vm.expectRevert(StoreEscrow.NotMerchant.selector);
+        vm.expectRevert(StoreEscrow.NotAdmin.selector);
         store.refund(orderId);
     }
 
     function test_refund_revertsWhenBalanceWithdrawn() public {
         uint256 orderId = _buy();
-        vm.prank(merchant);
+        vm.prank(admin);
         store.withdraw();
-        vm.prank(merchant);
+        vm.prank(admin);
         vm.expectRevert(StoreEscrow.InsufficientEscrowBalance.selector);
         store.refund(orderId);
     }
 
-    function test_refund_afterMerchantTopUp() public {
+    function test_refund_afterAdminTopUp() public {
         uint256 orderId = _buy();
-        vm.prank(merchant);
+        vm.prank(admin);
         store.withdraw();
 
-        vm.deal(merchant, PRICE);
-        vm.prank(merchant);
+        vm.deal(admin, PRICE);
+        vm.prank(admin);
         (bool ok,) = address(store).call{value: PRICE}("");
         assertTrue(ok);
 
-        vm.prank(merchant);
+        vm.prank(admin);
         store.refund(orderId);
         assertEq(uint8(_status(orderId)), uint8(StoreEscrow.Status.REFUNDED));
     }
@@ -223,7 +230,7 @@ contract StoreEscrowEthTest is Test {
 
         vm.expectEmit(true, true, true, true);
         emit StoreEscrow.RefundQueued(orderId, address(hostile), PRICE);
-        vm.prank(merchant);
+        vm.prank(admin);
         store.refund(orderId);
 
         assertEq(uint8(_status(orderId)), uint8(StoreEscrow.Status.REFUNDED));
@@ -237,7 +244,7 @@ contract StoreEscrowEthTest is Test {
         ToggleBuyer hostile = new ToggleBuyer();
         vm.deal(address(this), PRICE);
         uint256 orderId = hostile.buy{value: PRICE}(store, BLOB);
-        vm.prank(merchant);
+        vm.prank(admin);
         store.refund(orderId);
 
         // Still rejecting ETH: the claim's send fails and the whole claim reverts.
@@ -265,10 +272,10 @@ contract StoreEscrowEthTest is Test {
         vm.deal(address(this), PRICE);
         uint256 orderId = attacker.buy{value: PRICE}(BLOB);
 
-        vm.prank(merchant);
+        vm.prank(admin);
         store.refund(orderId);
 
-        // The reentrant withdraw() reverted inside the attacker's receive (onlyMerchant; the
+        // The reentrant withdraw() reverted inside the attacker's receive (onlyAdmin; the
         // reentrancy guard backstops it), so the push failed and the refund was queued instead
         // — funds never left through the reentrant path.
         assertEq(store.pendingRefunds(address(attacker)), PRICE);
@@ -278,30 +285,32 @@ contract StoreEscrowEthTest is Test {
 
     // ---- withdraw ----
 
-    function test_withdraw_paysMerchant() public {
+    function test_withdraw_paysPayoutRecipientNotAdmin() public {
         _buy();
         _buy();
-        uint256 merchantBefore = merchant.balance;
+        uint256 payoutBefore = payout.balance;
+        uint256 adminBefore = admin.balance;
 
         vm.expectEmit(true, true, true, true);
-        emit StoreEscrow.Withdrawn(merchant, 2 * PRICE);
-        vm.prank(merchant);
+        emit StoreEscrow.Withdrawn(admin, 2 * PRICE);
+        vm.prank(admin);
         store.withdraw();
 
-        assertEq(merchant.balance, merchantBefore + 2 * PRICE);
+        assertEq(payout.balance, payoutBefore + 2 * PRICE);
+        assertEq(admin.balance, adminBefore);
         assertEq(address(store).balance, 0);
     }
 
-    function test_withdraw_onlyMerchant() public {
+    function test_withdraw_onlyAdmin() public {
         _buy();
         vm.prank(stranger);
-        vm.expectRevert(StoreEscrow.NotMerchant.selector);
+        vm.expectRevert(StoreEscrow.NotAdmin.selector);
         store.withdraw();
         assertEq(address(store).balance, PRICE);
     }
 
     function test_withdraw_rejectsWhenEmpty() public {
-        vm.prank(merchant);
+        vm.prank(admin);
         vm.expectRevert(StoreEscrow.NothingToWithdraw.selector);
         store.withdraw();
     }
@@ -310,15 +319,15 @@ contract StoreEscrowEthTest is Test {
         ToggleBuyer hostile = new ToggleBuyer();
         vm.deal(address(this), PRICE);
         uint256 hostileOrder = hostile.buy{value: PRICE}(store, BLOB);
-        _buy(); // second order stays merchant-withdrawable
+        _buy(); // second order stays admin-withdrawable
 
-        vm.prank(merchant);
+        vm.prank(admin);
         store.refund(hostileOrder); // queued: liability = PRICE
 
-        uint256 merchantBefore = merchant.balance;
-        vm.prank(merchant);
+        uint256 payoutBefore = payout.balance;
+        vm.prank(admin);
         store.withdraw();
-        assertEq(merchant.balance, merchantBefore + PRICE); // only the non-liability half
+        assertEq(payout.balance, payoutBefore + PRICE); // only the non-liability half
         assertEq(address(store).balance, PRICE); // queued refund stays reserved
 
         hostile.setAcceptEth(true);
@@ -352,7 +361,8 @@ contract StoreEscrowUsdcTest is Test {
     StoreEscrow internal store;
     MockUSDC internal usdc;
 
-    address internal merchant = makeAddr("merchant");
+    address internal admin = makeAddr("admin");
+    address internal payout = makeAddr("payout");
     address internal buyer = makeAddr("buyer");
 
     uint256 internal constant PRICE = 25_000_000; // 25 USDC (6 decimals)
@@ -362,7 +372,7 @@ contract StoreEscrowUsdcTest is Test {
 
     function setUp() public {
         usdc = new MockUSDC();
-        store = new StoreEscrow(merchant, address(usdc), PRICE, PUBKEY, SCHEMA_HASH);
+        store = new StoreEscrow(admin, payout, address(usdc), PRICE, PUBKEY, SCHEMA_HASH);
         usdc.mint(buyer, 1_000_000_000);
     }
 
@@ -397,18 +407,19 @@ contract StoreEscrowUsdcTest is Test {
     function test_refund_pushesTokensToBuyer() public {
         uint256 orderId = _buy();
         uint256 balanceBefore = usdc.balanceOf(buyer);
-        vm.prank(merchant);
+        vm.prank(admin);
         store.refund(orderId);
         assertEq(usdc.balanceOf(buyer), balanceBefore + PRICE);
         assertEq(usdc.balanceOf(address(store)), 0);
     }
 
-    function test_withdraw_paysMerchantInTokens() public {
+    function test_withdraw_paysPayoutRecipientInTokens() public {
         _buy();
         _buy();
-        vm.prank(merchant);
+        vm.prank(admin);
         store.withdraw();
-        assertEq(usdc.balanceOf(merchant), 2 * PRICE);
+        assertEq(usdc.balanceOf(payout), 2 * PRICE);
+        assertEq(usdc.balanceOf(admin), 0);
         assertEq(usdc.balanceOf(address(store)), 0);
     }
 
@@ -421,7 +432,7 @@ contract StoreEscrowUsdcTest is Test {
 
     function test_pay_rejectsFeeOnTransferToken() public {
         FeeOnTransferToken feeToken = new FeeOnTransferToken();
-        StoreEscrow feeStore = new StoreEscrow(merchant, address(feeToken), PRICE, PUBKEY, SCHEMA_HASH);
+        StoreEscrow feeStore = new StoreEscrow(admin, payout, address(feeToken), PRICE, PUBKEY, SCHEMA_HASH);
         feeToken.mint(buyer, PRICE * 2);
 
         vm.startPrank(buyer);
@@ -433,7 +444,7 @@ contract StoreEscrowUsdcTest is Test {
 
     function test_pay_rejectsFalseReturnToken() public {
         FalseReturnToken falseToken = new FalseReturnToken();
-        StoreEscrow falseStore = new StoreEscrow(merchant, address(falseToken), PRICE, PUBKEY, SCHEMA_HASH);
+        StoreEscrow falseStore = new StoreEscrow(admin, payout, address(falseToken), PRICE, PUBKEY, SCHEMA_HASH);
         falseToken.mint(buyer, PRICE * 2);
 
         vm.startPrank(buyer);

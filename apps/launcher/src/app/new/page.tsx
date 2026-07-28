@@ -52,7 +52,8 @@ export default function NewStore() {
     payoutAddress: "",
     fields: DEFAULT_FIELDS,
   });
-  const [launched, setLaunched] = useState<{ storeAddress: Hex; txHash: Hex; config: StoreConfig }>();
+  const [launched, setLaunched] =
+    useState<{ storeAddress: Hex; txHash: Hex; config: StoreConfig; configWarning?: string }>();
 
   if (me.isPending) return <div className="boot">LOADING…</div>;
   if (!me.data?.authenticated || !me.data.email) {
@@ -134,7 +135,7 @@ function ProductStep({
     draft.name.trim().length === 0 && "a product name",
     !priceOk && `a price in ${draft.asset.symbol}`,
     !payoutOk && "a valid payout address",
-    payoutOk && draft.payoutAddress === "" && !connected && "a payout address (or connect a wallet)",
+    !connected && "a connected wallet",
   ].filter(Boolean) as string[];
   const ready = missing.length === 0;
 
@@ -221,8 +222,11 @@ function ProductStep({
         />
         {!payoutOk && <p className="field__error">Not a valid address</p>}
         <p className="field__hint">
-          Where withdrawals go. <strong>Permanent</strong> — it cannot be changed after launch; to
-          switch wallets later you would launch a new shop. Defaults to your connected wallet.
+          Where withdrawals go — a cold wallet works, since this address needs no powers.
+          <strong> Permanent</strong> — it cannot be changed after launch; to switch later you
+          would launch a new shop. Defaults to your connected wallet. Either way, your{" "}
+          <strong>connected wallet stays the shop&apos;s admin</strong>: it fulfils, refunds,
+          withdraws, and decrypts orders.
         </p>
       </div>
 
@@ -373,7 +377,7 @@ function ReviewStep({
   draft: Draft;
   payout: Hex;
   onBack: () => void;
-  onLaunched: (r: { storeAddress: Hex; txHash: Hex; config: StoreConfig }) => void;
+  onLaunched: (r: { storeAddress: Hex; txHash: Hex; config: StoreConfig; configWarning?: string }) => void;
 }) {
   const publicClient = usePublicClient();
   const { writeContractAsync } = useWriteContract();
@@ -482,14 +486,25 @@ function ReviewStep({
         fulfillment: { fields: draft.fields },
       };
       // Persist server-side so the package can be re-downloaded from /stores later.
-      // Best-effort: the launch already succeeded on-chain, so never fail it over this.
-      await fetch(`/api/stores/${deployed.args.store}/config`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(config),
-      }).catch(() => {});
+      // Best-effort: the launch already succeeded on-chain, so never fail it over this —
+      // but do surface a failed save instead of swallowing it (audit finding: a silent 403
+      // here hid the old merchant/payout role mismatch).
+      let configWarning: string | undefined;
+      try {
+        const saved = await fetch(`/api/stores/${deployed.args.store}/config`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(config),
+        });
+        if (!saved.ok) {
+          const body = (await saved.json().catch(() => ({}))) as { error?: string };
+          configWarning = body.error ?? `HTTP ${saved.status}`;
+        }
+      } catch {
+        configWarning = "network error";
+      }
 
-      onLaunched({ storeAddress: deployed.args.store, txHash, config });
+      onLaunched({ storeAddress: deployed.args.store, txHash, config, configWarning });
     } catch (err) {
       if (err instanceof Error && err.name === "WaitForTransactionReceiptTimeoutError") {
         setError(
@@ -525,6 +540,10 @@ function ReviewStep({
           <dd>
             {formatUnits(price, draft.asset.decimals)} {draft.asset.symbol}
           </dd>
+        </div>
+        <div>
+          <dt>admin wallet (fulfils, refunds, decrypts)</dt>
+          <dd>{connected}</dd>
         </div>
         <div>
           <dt>payout address (permanent)</dt>
@@ -610,7 +629,17 @@ function ReviewStep({
 
 /* ——— step 5: launched ——— */
 
-function LaunchedStep({ storeAddress, txHash, config }: { storeAddress: Hex; txHash: Hex; config: StoreConfig }) {
+function LaunchedStep({
+  storeAddress,
+  txHash,
+  config,
+  configWarning,
+}: {
+  storeAddress: Hex;
+  txHash: Hex;
+  config: StoreConfig;
+  configWarning?: string;
+}) {
   const [error, setError] = useState<string>();
   const chain = launcherChain();
   const explorer = chain.blockExplorers?.default?.url;
@@ -643,6 +672,12 @@ function LaunchedStep({ storeAddress, txHash, config }: { storeAddress: Hex; txH
     <div className="card reveal">
       <span className="stamp">Launched</span>
       <h1 style={{ fontSize: 34, margin: "18px 0 6px" }}>{config.product.name} is live on-chain.</h1>
+      {configWarning && (
+        <div className="error-box">
+          Your shop launched fine, but saving its config to the launcher failed ({configWarning}).
+          Download the storefront package below now — it is the only copy of your shop setup.
+        </div>
+      )}
       <dl className="rows">
         <div>
           <dt>shop contract</dt>

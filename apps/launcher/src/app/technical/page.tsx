@@ -82,7 +82,8 @@ export default function Technical() {
             Deployed once per network. deployStore() charges the launch fee
             (forwarded whole to the treasury, never held), validates the payment asset (native ETH or an
             allowlisted ERC-20), deploys your shop&apos;s escrow contract, and records it in the on-chain
-            merchant → shops registry that powers your dashboard. The platform owner can adjust the fee,
+            admin → shops registry that powers your dashboard. The wallet that launches the shop is
+            always its admin — that can&apos;t be delegated. The platform owner can adjust the fee,
             treasury, and token allowlist for <em>future</em> shops only — it has no power over existing
             shops or their funds.
           </dd>
@@ -90,13 +91,13 @@ export default function Technical() {
         <div>
           <dt>StoreEscrow</dt>
           <dd>
-            One per shop, owned by you. Payout address, payment token, price, encryption key, and order-form
-            hash are immutable constructor arguments. Orders move{" "}
-            PAID → FULFILLED | CANCELLED (merchant-only), and any non-refunded
-            order can be refunded by the merchant while escrow covers it. ETH refunds push to the buyer and
+            One per shop, owned by you. Admin wallet (the wallet that launched it), payout address,
+            payment token, price, encryption key, and order-form hash are immutable constructor
+            arguments. Orders move PAID → FULFILLED | CANCELLED (admin-only), and any non-refunded
+            order can be refunded by the admin while escrow covers it. ETH refunds push to the buyer and
             fall back to a claimable credit if the push reverts; the withdrawable balance always excludes
-            unclaimed refunds. withdraw() is merchant-only and pays the
-            immutable payout address.
+            unclaimed refunds. withdraw() is admin-only and pays the immutable payout address — which
+            holds no powers, so it can safely be a cold wallet.
           </dd>
         </div>
       </dl>

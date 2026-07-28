@@ -5,7 +5,12 @@ export const storeEscrowAbi = [
     "type": "constructor",
     "inputs": [
       {
-        "name": "merchant_",
+        "name": "admin_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "payoutRecipient_",
         "type": "address",
         "internalType": "address"
       },
@@ -35,6 +40,19 @@ export const storeEscrowAbi = [
   {
     "type": "receive",
     "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "admin",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -78,19 +96,6 @@ export const storeEscrowAbi = [
         "name": "",
         "type": "bytes32",
         "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "merchant",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
       }
     ],
     "stateMutability": "view"
@@ -172,6 +177,19 @@ export const storeEscrowAbi = [
   {
     "type": "function",
     "name": "paymentToken",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "payoutRecipient",
     "inputs": [],
     "outputs": [
       {
@@ -453,7 +471,7 @@ export const storeEscrowAbi = [
   },
   {
     "type": "error",
-    "name": "NotMerchant",
+    "name": "NotAdmin",
     "inputs": []
   },
   {
@@ -560,7 +578,7 @@ export const storefrontFactoryAbi = [
     "name": "deployStore",
     "inputs": [
       {
-        "name": "merchant",
+        "name": "payoutRecipient",
         "type": "address",
         "internalType": "address"
       },
@@ -599,7 +617,7 @@ export const storefrontFactoryAbi = [
     "name": "getStores",
     "inputs": [
       {
-        "name": "merchant",
+        "name": "admin",
         "type": "address",
         "internalType": "address"
       }
@@ -695,7 +713,7 @@ export const storefrontFactoryAbi = [
     "name": "storeCount",
     "inputs": [
       {
-        "name": "merchant",
+        "name": "admin",
         "type": "address",
         "internalType": "address"
       }
@@ -778,7 +796,7 @@ export const storefrontFactoryAbi = [
     "name": "StoreDeployed",
     "inputs": [
       {
-        "name": "merchant",
+        "name": "admin",
         "type": "address",
         "indexed": true,
         "internalType": "address"
@@ -787,6 +805,12 @@ export const storefrontFactoryAbi = [
         "name": "store",
         "type": "address",
         "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "payoutRecipient",
+        "type": "address",
+        "indexed": false,
         "internalType": "address"
       },
       {

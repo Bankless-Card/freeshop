@@ -5,8 +5,8 @@ import {Script, console} from "forge-std/Script.sol";
 import {StorefrontFactory} from "../src/StorefrontFactory.sol";
 import {StoreEscrow} from "../src/StoreEscrow.sol";
 
-/// @notice Full lifecycle smoke test against a live network (anvil or Sepolia), acting as both
-///         merchant and buyer from the broadcasting key:
+/// @notice Full lifecycle smoke test against a live network (anvil or Sepolia), acting as admin,
+///         payout recipient, and buyer from the broadcasting key:
 ///         deploy factory → deploy ETH store → pay → FULFILLED → second order → refund → withdraw.
 ///
 /// Local:
@@ -48,7 +48,7 @@ contract Smoke is Script {
         require(store.availableBalance() == PRICE, "unexpected balance");
         store.withdraw();
         require(store.availableBalance() == 0, "withdraw miss");
-        console.log("withdrawn to merchant");
+        console.log("withdrawn to payout recipient");
 
         vm.stopBroadcast();
         console.log("smoke test OK");

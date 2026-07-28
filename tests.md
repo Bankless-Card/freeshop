@@ -152,29 +152,32 @@ The indexer from step 2 powers everything here. In the launcher, as the **mercha
 
 ### 5b. Fulfil / refund / withdraw without the dashboard (self-sovereignty check — use cast)
 
+The admin key below is the wallet that launched the shop (anvil dev account #0 in local QA).
+
 ```sh
 STORE=<store address>
-MERCHANT_PK=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+ADMIN_PK=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 
-cast send $STORE "setStatus(uint256,uint8)" 1 2 --rpc-url http://localhost:8545 --private-key $MERCHANT_PK
+cast send $STORE "setStatus(uint256,uint8)" 1 2 --rpc-url http://localhost:8545 --private-key $ADMIN_PK
 # → reload ?order=1: stamp reads FULFILLED
 
-cast send $STORE "refund(uint256)" 1 --rpc-url http://localhost:8545 --private-key $MERCHANT_PK
+cast send $STORE "refund(uint256)" 1 --rpc-url http://localhost:8545 --private-key $ADMIN_PK
 # → buyer balance +price in MetaMask; stamp reads REFUNDED
 ```
 
 Then place a second order as the buyer and:
 
 ```sh
-# From the buyer's key: must revert with NotMerchant (withdraw is merchant-only)
+# From the buyer's key: must revert with NotAdmin (withdraw is admin-only)
 cast send $STORE "withdraw()" --rpc-url http://localhost:8545 \
   --private-key 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
 
-cast send $STORE "withdraw()" --rpc-url http://localhost:8545 --private-key $MERCHANT_PK
+cast send $STORE "withdraw()" --rpc-url http://localhost:8545 --private-key $ADMIN_PK
 ```
 
-- [ ] The buyer's withdraw attempt reverted; the merchant's succeeded and the merchant balance
-      received the funds (withdraw always pays the immutable merchant address).
+- [ ] The buyer's withdraw attempt reverted; the admin's succeeded and the funds landed at the
+      shop's payout address (`cast call $STORE "payoutRecipient()(address)"`), which is the
+      admin's own address unless a custom payout was set at launch.
 
 ### 5c. Storefront merchant dashboard (admin.html — no backend)
 

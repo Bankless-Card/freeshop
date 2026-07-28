@@ -13,7 +13,7 @@ import type { AdminOrder, Rollup } from "./analytics";
 
 export type GateState = "connect" | "wrong-chain" | "wrong-wallet" | "open";
 
-export function renderGate(state: GateState, info?: { connected?: string; merchant?: string }): void {
+export function renderGate(state: GateState, info?: { connected?: string; admin?: string }): void {
   const blocks: Array<[string, GateState]> = [
     ["gate-connect", "connect"],
     ["gate-wrong-chain", "wrong-chain"],
@@ -28,7 +28,7 @@ export function renderGate(state: GateState, info?: { connected?: string; mercha
   const panel = byId("panel");
   if (panel) panel.hidden = state !== "open";
   if (info?.connected) setSlot("gate-connected", info.connected);
-  if (info?.merchant) setSlot("gate-merchant", info.merchant);
+  if (info?.admin) setSlot("gate-admin", info.admin);
 }
 
 export function renderAnalytics(rollup: Rollup, config: StoreConfig): void {

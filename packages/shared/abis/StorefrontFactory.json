@@ -44,7 +44,7 @@
     "name": "deployStore",
     "inputs": [
       {
-        "name": "merchant",
+        "name": "payoutRecipient",
         "type": "address",
         "internalType": "address"
       },
@@ -83,7 +83,7 @@
     "name": "getStores",
     "inputs": [
       {
-        "name": "merchant",
+        "name": "admin",
         "type": "address",
         "internalType": "address"
       }
@@ -179,7 +179,7 @@
     "name": "storeCount",
     "inputs": [
       {
-        "name": "merchant",
+        "name": "admin",
         "type": "address",
         "internalType": "address"
       }
@@ -262,7 +262,7 @@
     "name": "StoreDeployed",
     "inputs": [
       {
-        "name": "merchant",
+        "name": "admin",
         "type": "address",
         "indexed": true,
         "internalType": "address"
@@ -271,6 +271,12 @@
         "name": "store",
         "type": "address",
         "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "payoutRecipient",
+        "type": "address",
+        "indexed": false,
         "internalType": "address"
       },
       {

@@ -3,7 +3,12 @@
     "type": "constructor",
     "inputs": [
       {
-        "name": "merchant_",
+        "name": "admin_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "payoutRecipient_",
         "type": "address",
         "internalType": "address"
       },
@@ -33,6 +38,19 @@
   {
     "type": "receive",
     "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "admin",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -76,19 +94,6 @@
         "name": "",
         "type": "bytes32",
         "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "merchant",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
       }
     ],
     "stateMutability": "view"
@@ -170,6 +175,19 @@
   {
     "type": "function",
     "name": "paymentToken",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "payoutRecipient",
     "inputs": [],
     "outputs": [
       {
@@ -451,7 +469,7 @@
   },
   {
     "type": "error",
-    "name": "NotMerchant",
+    "name": "NotAdmin",
     "inputs": []
   },
   {

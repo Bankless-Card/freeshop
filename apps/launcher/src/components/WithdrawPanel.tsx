@@ -64,12 +64,12 @@ export function WithdrawPanel({ store, symbol, decimals, unfulfilled }: Withdraw
         disabled={busy || !available}
         onClick={withdraw}
       >
-        {busy ? "Withdrawing…" : "Withdraw to merchant address"}
+        {busy ? "Withdrawing…" : "Withdraw to payout address"}
       </button>
       <p className="field__hint">
-        Only the merchant wallet can withdraw, and funds only ever go to the shop&apos;s permanent
-        merchant address. You can also call <span className="mono">withdraw()</span> straight from
-        a block explorer — this button is a convenience, not a dependency.
+        Only the shop&apos;s admin wallet can withdraw, and funds only ever go to the shop&apos;s
+        permanent payout address. You can also call <span className="mono">withdraw()</span> straight
+        from a block explorer — this button is a convenience, not a dependency.
       </p>
       {error && <div className="error-box">{error}</div>}
     </>

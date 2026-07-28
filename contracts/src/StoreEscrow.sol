@@ -10,8 +10,10 @@ import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 /// @notice Sells a single product at a fixed price in a single asset (native ETH or one ERC-20).
 ///         Buyer fulfillment data is encrypted client-side to `merchantPubKey` (x25519) and emitted
 ///         in the `pay` transaction as event data — never kept in contract storage.
+///         Two immutable roles: `admin` (the deploying wallet — authorizes setStatus/refund/withdraw
+///         and derives the decryption key) and `payoutRecipient` (where withdrawals land; no powers).
 ///         Proceeds accrue in the contract (so refunds stay payable) until `withdraw()` sends them
-///         to the immutable `merchant`.
+///         to the immutable `payoutRecipient`.
 contract StoreEscrow is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -29,13 +31,18 @@ contract StoreEscrow is ReentrancyGuard {
         Status status;
     }
 
-    /// @notice Payout recipient and owner of merchant-only actions. Immutable by design (v1: no rotation).
-    address public immutable merchant;
+    /// @notice Owner of admin-only actions (setStatus/refund/withdraw) and the wallet whose
+    ///         signature derives the decryption key. Always the wallet that called the factory.
+    ///         Immutable by design (v1: no rotation).
+    address public immutable admin;
+    /// @notice Destination of withdrawals — and nothing else: it holds no powers, so it may be a
+    ///         cold wallet or exchange deposit address. Immutable by design (v1: no rotation).
+    address public immutable payoutRecipient;
     /// @notice Payment asset. address(0) is the native-ETH sentinel; otherwise a factory-whitelisted ERC-20.
     address public immutable paymentToken;
     uint256 public immutable price;
-    /// @notice x25519 public key buyers encrypt fulfillment payloads to. The merchant re-derives the
-    ///         matching private key from a wallet signature; the platform never sees plaintext.
+    /// @notice x25519 public key buyers encrypt fulfillment payloads to. The admin wallet re-derives
+    ///         the matching private key from a signature; the platform never sees plaintext.
     bytes32 public immutable merchantPubKey;
     /// @notice Commitment to the fulfillment-field schema the storefront renders.
     bytes32 public immutable fulfillmentSchemaHash;
@@ -58,7 +65,7 @@ contract StoreEscrow is ReentrancyGuard {
     event RefundClaimed(address indexed buyer, uint256 amount);
     event Withdrawn(address indexed caller, uint256 amount);
 
-    error NotMerchant();
+    error NotAdmin();
     error ZeroAddress();
     error ZeroPrice();
     error ZeroPubKey();
@@ -71,22 +78,24 @@ contract StoreEscrow is ReentrancyGuard {
     error NothingToWithdraw();
     error EthNotAccepted();
 
-    modifier onlyMerchant() {
-        if (msg.sender != merchant) revert NotMerchant();
+    modifier onlyAdmin() {
+        if (msg.sender != admin) revert NotAdmin();
         _;
     }
 
     constructor(
-        address merchant_,
+        address admin_,
+        address payoutRecipient_,
         address paymentToken_,
         uint256 price_,
         bytes32 merchantPubKey_,
         bytes32 fulfillmentSchemaHash_
     ) {
-        if (merchant_ == address(0)) revert ZeroAddress();
+        if (admin_ == address(0) || payoutRecipient_ == address(0)) revert ZeroAddress();
         if (price_ == 0) revert ZeroPrice();
         if (merchantPubKey_ == bytes32(0)) revert ZeroPubKey();
-        merchant = merchant_;
+        admin = admin_;
+        payoutRecipient = payoutRecipient_;
         // slither-disable-next-line missing-zero-check -- address(0) is the native-ETH sentinel
         paymentToken = paymentToken_;
         price = price_;
@@ -115,8 +124,8 @@ contract StoreEscrow is ReentrancyGuard {
         }
     }
 
-    /// @notice Merchant-only fulfillment bookkeeping. Refunds go through `refund()`, never here.
-    function setStatus(uint256 orderId, Status newStatus) external onlyMerchant {
+    /// @notice Admin-only fulfillment bookkeeping. Refunds go through `refund()`, never here.
+    function setStatus(uint256 orderId, Status newStatus) external onlyAdmin {
         Order storage order = orders[orderId];
         if (order.status != Status.PAID) revert InvalidTransition();
         if (newStatus != Status.FULFILLED && newStatus != Status.CANCELLED) revert InvalidTransition();
@@ -124,11 +133,11 @@ contract StoreEscrow is ReentrancyGuard {
         order.status = newStatus;
     }
 
-    /// @notice Full refund of one order, merchant-only, allowed from any status except REFUNDED —
+    /// @notice Full refund of one order, admin-only, allowed from any status except REFUNDED —
     ///         including after FULFILLED. ETH refunds are pushed to the buyer; if the push reverts,
     ///         the amount is credited for the buyer to `claimRefund()` so a hostile recipient cannot
     ///         make their order permanently unrefundable.
-    function refund(uint256 orderId) external nonReentrant onlyMerchant {
+    function refund(uint256 orderId) external nonReentrant onlyAdmin {
         Order storage order = orders[orderId];
         if (order.status == Status.NONE || order.status == Status.REFUNDED) revert NotRefundable();
         uint256 amount = order.amount;
@@ -165,29 +174,29 @@ contract StoreEscrow is ReentrancyGuard {
         Address.sendValue(payable(msg.sender), amount);
     }
 
-    /// @notice Sends the store's withdrawable balance to the immutable `merchant`. Merchant-only:
+    /// @notice Sends the store's withdrawable balance to the immutable `payoutRecipient`. Admin-only:
     ///         a third party who could trigger withdrawals at will could front-run `refund()` and
-    ///         force it to revert with `InsufficientEscrowBalance` until the merchant tops back up.
-    function withdraw() external nonReentrant onlyMerchant {
+    ///         force it to revert with `InsufficientEscrowBalance` until the admin tops back up.
+    function withdraw() external nonReentrant onlyAdmin {
         uint256 amount = availableBalance();
         // slither-disable-next-line incorrect-equality -- zero-comparison, not a balance equality
         if (amount == 0) revert NothingToWithdraw();
         emit Withdrawn(msg.sender, amount);
         if (paymentToken == address(0)) {
-            Address.sendValue(payable(merchant), amount);
+            Address.sendValue(payable(payoutRecipient), amount);
         } else {
-            IERC20(paymentToken).safeTransfer(merchant, amount);
+            IERC20(paymentToken).safeTransfer(payoutRecipient, amount);
         }
     }
 
-    /// @notice Balance the merchant may withdraw: holdings minus refunds owed to buyers.
+    /// @notice Balance the admin may withdraw: holdings minus refunds owed to buyers.
     function availableBalance() public view returns (uint256) {
         uint256 balance =
             paymentToken == address(0) ? address(this).balance : IERC20(paymentToken).balanceOf(address(this));
         return balance > totalRefundLiability ? balance - totalRefundLiability : 0;
     }
 
-    /// @notice ETH stores accept plain transfers so a merchant can top the contract back up to cover
+    /// @notice ETH stores accept plain transfers so the admin can top the contract back up to cover
     ///         refunds after withdrawing. ERC-20 stores reject ETH so it can never get stuck here.
     receive() external payable {
         if (paymentToken != address(0)) revert EthNotAccepted();

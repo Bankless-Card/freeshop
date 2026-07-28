@@ -93,7 +93,7 @@ async function boot(): Promise<void> {
   });
 
   const contract = { address: config.storeAddress, abi: storeEscrowAbi } as const;
-  const merchant = await publicClient.readContract({ ...contract, functionName: "merchant" });
+  const admin = await publicClient.readContract({ ...contract, functionName: "admin" });
 
   // ——— panel state ———
   let orders: AdminOrder[] = [];
@@ -266,8 +266,8 @@ async function boot(): Promise<void> {
       renderGate("connect");
     } else if (wallet.onWrongChain()) {
       renderGate("wrong-chain");
-    } else if (address.toLowerCase() !== merchant.toLowerCase()) {
-      renderGate("wrong-wallet", { connected: address, merchant });
+    } else if (address.toLowerCase() !== admin.toLowerCase()) {
+      renderGate("wrong-wallet", { connected: address, admin });
     } else {
       renderGate("open");
       if (!panelLoaded) {

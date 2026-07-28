@@ -37,6 +37,8 @@ const RPC_URL = `http://127.0.0.1:${RPC_PORT}`;
 // anvil's well-known dev keys — test-only
 const MERCHANT_PK = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" as const;
 const BUYER_PK = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d" as const;
+// A cold payout address that never transacts — withdrawals must land here, not at the admin.
+const PAYOUT_ADDRESS = "0x00000000000000000000000000000000000c01d0" as const;
 
 const PRICE = parseEther("0.05");
 const LAUNCH_FEE = parseEther("0.01");
@@ -80,11 +82,12 @@ async function deployStack(): Promise<Hex> {
   const signature = await merchant.signMessage({ message: KEY_DERIVATION_MESSAGE });
   const keys = deriveMerchantKeyPair(signature);
 
+  // The caller becomes the store's admin; only the payout destination is a parameter.
   const deployStoreHash = await merchant.writeContract({
     address: factory,
     abi: storefrontFactoryAbi,
     functionName: "deployStore",
-    args: [merchantAccount.address, ETH_SENTINEL, PRICE, keys.publicKey, hashFulfillmentSchema(SCHEMA)],
+    args: [PAYOUT_ADDRESS, ETH_SENTINEL, PRICE, keys.publicKey, hashFulfillmentSchema(SCHEMA)],
     value: LAUNCH_FEE,
   });
   const storeReceipt = await publicClient.waitForTransactionReceipt({ hash: deployStoreHash });
@@ -198,7 +201,16 @@ describe("storefront purchase protocol on anvil", () => {
     expect(status).toBe(4); // REFUNDED
   }, 30_000);
 
-  it("withdraw sends the remaining balance to the merchant", async () => {
+  it("admin withdraws; funds land at the payout address, not the admin", async () => {
+    expect(
+      await publicClient.readContract({ address: storeAddress, abi: storeEscrowAbi, functionName: "admin" }),
+    ).toBe(merchantAccount.address);
+    expect(
+      (
+        await publicClient.readContract({ address: storeAddress, abi: storeEscrowAbi, functionName: "payoutRecipient" })
+      ).toLowerCase(),
+    ).toBe(PAYOUT_ADDRESS.toLowerCase());
+
     const available = await publicClient.readContract({
       address: storeAddress,
       abi: storeEscrowAbi,
@@ -207,7 +219,7 @@ describe("storefront purchase protocol on anvil", () => {
     expect(available).toBe(PRICE); // one live order remains after the refund
 
     const withdrawHash = await merchant.writeContract({
-      // merchant-only
+      // admin-only
       address: storeAddress,
       abi: storeEscrowAbi,
       functionName: "withdraw",
@@ -217,5 +229,6 @@ describe("storefront purchase protocol on anvil", () => {
     expect(
       await publicClient.readContract({ address: storeAddress, abi: storeEscrowAbi, functionName: "availableBalance" }),
     ).toBe(0n);
+    expect(await publicClient.getBalance({ address: PAYOUT_ADDRESS })).toBe(PRICE);
   }, 30_000);
 });

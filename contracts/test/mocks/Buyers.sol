@@ -43,8 +43,8 @@ contract ReentrantBuyer {
     }
 
     receive() external payable {
-        // Try to force a withdrawal during the refund push; onlyMerchant rejects it (and the
-        // reentrancy guard would stop it as defense-in-depth even for a merchant caller).
+        // Try to force a withdrawal during the refund push; onlyAdmin rejects it (and the
+        // reentrancy guard would stop it as defense-in-depth even for an admin caller).
         reentered = true;
         store.withdraw();
     }

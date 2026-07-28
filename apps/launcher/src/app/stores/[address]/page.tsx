@@ -39,14 +39,14 @@ export default function StoreDetail() {
   const { data: facts } = useReadContracts({
     allowFailure: false,
     contracts: [
-      { ...contract, functionName: "merchant" },
+      { ...contract, functionName: "admin" },
       { ...contract, functionName: "paymentToken" },
       { ...contract, functionName: "price" },
       { ...contract, functionName: "fulfillmentSchemaHash" },
     ],
     query: { enabled: !!storeAddress },
   });
-  const [merchant, token, price, onChainSchemaHash] = facts ?? [];
+  const [admin, token, price, onChainSchemaHash] = facts ?? [];
 
   // Token metadata: ETH and the configured USDC are known; other ERC-20s read from the chain.
   const isEth = token === ETH_SENTINEL;
@@ -110,7 +110,7 @@ export default function StoreDetail() {
     );
   }
 
-  const notOwner = !!merchant && merchant.toLowerCase() !== me.data.address;
+  const notOwner = !!admin && admin.toLowerCase() !== me.data.address;
   const schemaMatches = !!onChainSchemaHash && hashFulfillmentSchema(fields) === onChainSchemaHash;
   const formValid = name.trim().length > 0 && fieldsAreValid(fields);
   const explorer = chain.blockExplorers?.default?.url;

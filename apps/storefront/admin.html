@@ -7,7 +7,7 @@
     <meta name="robots" content="noindex" />
     <meta
       name="description"
-      content="Merchant dashboard for this self-hosted storefront. Connect the merchant wallet to manage orders."
+      content="Merchant dashboard for this self-hosted storefront. Connect the shop's admin wallet to manage orders."
     />
     <title>Merchant dashboard</title>
     <!--
@@ -21,8 +21,8 @@
         or encrypted (buyer details decrypt only with a key derived from the merchant
         wallet's signature — signed fresh each visit, kept in memory, never sent anywhere).
       · Actions are enforced by the contract itself: fulfil/cancel/refund/withdraw all
-        revert for anyone but the merchant. A visitor who strips this gate can only burn
-        their own gas.
+        revert for anyone but the shop's admin wallet, and withdrawals only ever pay the
+        immutable payout address. A visitor who strips this gate can only burn their own gas.
       · Only sign the unlock message on sites you trust — any site could ask for the same
         signature and gain the ability to read (never move) your order details.
     -->
@@ -47,8 +47,8 @@
         <!-- Cosmetic only (see the note in <head>): keeps buyers out of a confusing screen. -->
         <section id="gate" class="section reveal" style="--i: 1">
           <div id="gate-connect" hidden>
-            <h2 class="section__title">Connect the merchant wallet</h2>
-            <p>This page manages the shop for its merchant. Connect the payout wallet to open it.</p>
+            <h2 class="section__title">Connect the admin wallet</h2>
+            <p>This page manages the shop. Connect its admin wallet — the wallet that launched the shop — to open it.</p>
             <button id="gate-connect-btn" class="btn btn--ink" type="button">Connect wallet</button>
             <p id="no-wallet-hint" class="receipt__hint" hidden>
               On a phone? Open this page inside your wallet app's built-in browser (in MetaMask:
@@ -61,12 +61,12 @@
             <button id="switch-chain-btn" class="btn btn--ink" type="button">Switch network</button>
           </div>
           <div id="gate-wrong-wallet" hidden>
-            <h2 class="section__title">Not the merchant wallet</h2>
+            <h2 class="section__title">Not the admin wallet</h2>
             <p class="mono" style="font-size: 13px">
               connected: <span data-slot="gate-connected"></span><br />
-              merchant:&nbsp;&nbsp;<span data-slot="gate-merchant"></span>
+              admin:&nbsp;&nbsp;&nbsp;&nbsp;<span data-slot="gate-admin"></span>
             </p>
-            <p>Switch to the shop's payout wallet to open the dashboard.</p>
+            <p>Switch to the shop's admin wallet — the wallet that launched the shop.</p>
           </div>
           <div id="gate-error" class="error-box" hidden></div>
         </section>
@@ -98,9 +98,8 @@
               </svg>
               <span>
                 Buyer details are encrypted on-chain. Sign one message to derive your reading key
-                <em>in this browser</em> — the key is kept in memory and never sent anywhere. If
-                you created the shop's key with a different wallet than the payout wallet, unlock
-                with that one.
+                <em>in this browser</em> — the key is kept in memory and never sent anywhere. The
+                admin wallet that launched the shop is the wallet that derives the key.
               </span>
             </div>
             <button id="unlock-btn" class="btn" type="button">Sign to unlock order details</button>
@@ -123,10 +122,10 @@
               Some orders are still awaiting fulfilment. Withdrawn funds are no longer available
               for refunding them.
             </div>
-            <button id="withdraw-btn" class="btn btn--ink" type="button">Withdraw to merchant wallet</button>
+            <button id="withdraw-btn" class="btn btn--ink" type="button">Withdraw to payout address</button>
             <p class="receipt__hint">
-              Only the merchant wallet can withdraw; the funds only ever go to the shop's
-              permanent merchant address.
+              Only the shop's admin wallet can withdraw; the funds only ever go to the shop's
+              permanent payout address.
             </p>
             <div id="withdraw-error" class="error-box" hidden></div>
           </section>

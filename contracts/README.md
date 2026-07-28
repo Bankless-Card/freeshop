@@ -2,8 +2,8 @@
 
 Per-product escrow contracts for the decentralized storefront launcher.
 
-- **`StorefrontFactory`** — platform-deployed once. Charges the launch fee (owner-adjustable, default 0.005 ETH; `msg.value` must match it exactly so a stale client can't overpay after a fee change), forwards it to the treasury, validates the payment asset (native ETH sentinel `address(0)` or an allowlisted ERC-20), deploys `StoreEscrow`s, and keeps the on-chain merchant → stores registry.
-- **`StoreEscrow`** — one per product. Immutable constructor-set config (merchant, payment asset, price, merchant x25519 pubkey, fulfillment-schema hash). `pay()` emits the buyer's encrypted fulfillment blob as event data (never storage). Merchant-only `setStatus`/`refund`/`withdraw()`; withdrawals always pay the immutable merchant. ETH refunds push to the buyer and fall back to a claimable credit if the push reverts; the withdrawable balance always excludes unclaimed refund credits.
+- **`StorefrontFactory`** — platform-deployed once. Charges the launch fee (owner-adjustable, default 0.005 ETH; `msg.value` must match it exactly so a stale client can't overpay after a fee change), forwards it to the treasury, validates the payment asset (native ETH sentinel `address(0)` or an allowlisted ERC-20), deploys `StoreEscrow`s, and keeps the on-chain admin → stores registry. The caller of `deployStore` always becomes the store's `admin` — it is never a parameter, so the admin and the encryption key (derived from the deploying wallet's signature) cannot diverge.
+- **`StoreEscrow`** — one per product. Immutable constructor-set config (admin, payout recipient, payment asset, price, merchant x25519 pubkey, fulfillment-schema hash). `pay()` emits the buyer's encrypted fulfillment blob as event data (never storage). Admin-only `setStatus`/`refund`/`withdraw()`; withdrawals always pay the immutable `payoutRecipient`, which holds no powers (a cold wallet works). ETH refunds push to the buyer and fall back to a claimable credit if the push reverts; the withdrawable balance always excludes unclaimed refund credits.
 
 ## Develop
 
