@@ -20,9 +20,9 @@
         already public on the blockchain (order ids, statuses, amounts, buyer addresses)
         or encrypted (buyer details decrypt only with a key derived from the merchant
         wallet's signature — signed fresh each visit, kept in memory, never sent anywhere).
-      · Actions are enforced by the contract itself: fulfil/cancel/refund revert for
-        anyone but the merchant, and withdraw always pays the merchant no matter who
-        clicks it. A visitor who strips this gate can only burn their own gas.
+      · Actions are enforced by the contract itself: fulfil/cancel/refund/withdraw all
+        revert for anyone but the merchant. A visitor who strips this gate can only burn
+        their own gas.
       · Only sign the unlock message on sites you trust — any site could ask for the same
         signature and gain the ability to read (never move) your order details.
     -->
@@ -125,8 +125,8 @@
             </div>
             <button id="withdraw-btn" class="btn btn--ink" type="button">Withdraw to merchant wallet</button>
             <p class="receipt__hint">
-              Anyone may trigger a withdrawal; the funds only ever go to the shop's permanent
-              merchant address.
+              Only the merchant wallet can withdraw; the funds only ever go to the shop's
+              permanent merchant address.
             </p>
             <div id="withdraw-error" class="error-box" hidden></div>
           </section>

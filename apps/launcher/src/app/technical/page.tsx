@@ -95,8 +95,8 @@ export default function Technical() {
             PAID → FULFILLED | CANCELLED (merchant-only), and any non-refunded
             order can be refunded by the merchant while escrow covers it. ETH refunds push to the buyer and
             fall back to a claimable credit if the push reverts; the withdrawable balance always excludes
-            unclaimed refunds. withdraw() is callable by anyone but only ever
-            pays the immutable payout address.
+            unclaimed refunds. withdraw() is merchant-only and pays the
+            immutable payout address.
           </dd>
         </div>
       </dl>

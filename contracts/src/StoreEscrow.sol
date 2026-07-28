@@ -165,10 +165,10 @@ contract StoreEscrow is ReentrancyGuard {
         Address.sendValue(payable(msg.sender), amount);
     }
 
-    /// @notice Sends the store's withdrawable balance to the immutable `merchant` — never the caller.
-    ///         Callable by anyone; harmless because the destination is fixed (and this is what keeps
-    ///         a future batched multi-store sweep possible without changing this contract).
-    function withdraw() external nonReentrant {
+    /// @notice Sends the store's withdrawable balance to the immutable `merchant`. Merchant-only:
+    ///         a third party who could trigger withdrawals at will could front-run `refund()` and
+    ///         force it to revert with `InsufficientEscrowBalance` until the merchant tops back up.
+    function withdraw() external nonReentrant onlyMerchant {
         uint256 amount = availableBalance();
         // slither-disable-next-line incorrect-equality -- zero-comparison, not a balance equality
         if (amount == 0) revert NothingToWithdraw();

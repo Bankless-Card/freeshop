@@ -57,8 +57,8 @@ decrypt buyer details in your browser, and fulfil / cancel / refund / withdraw b
 
 - **The wallet gate is a curtain, not a lock** — and that's fine. Everything behind it is
   either already public on the blockchain (order ids, statuses, amounts, buyer addresses) or
-  encrypted. The contract itself rejects merchant actions from any other wallet, and
-  `withdraw` only ever pays your permanent merchant address.
+  encrypted. The contract itself rejects merchant actions — including `withdraw` — from any
+  other wallet, and `withdraw` only ever pays your permanent merchant address.
 - **The decryption key never exists on disk.** It is re-derived from your wallet's signature
   each time you unlock, held in memory, and never sent anywhere. Only sign that message on
   sites you trust. If you created the store's key with a different wallet than the payout

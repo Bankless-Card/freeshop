@@ -43,7 +43,8 @@ contract ReentrantBuyer {
     }
 
     receive() external payable {
-        // Try to drain via withdraw during the refund push; the reentrancy guard must stop this.
+        // Try to force a withdrawal during the refund push; onlyMerchant rejects it (and the
+        // reentrancy guard would stop it as defense-in-depth even for a merchant caller).
         reentered = true;
         store.withdraw();
     }

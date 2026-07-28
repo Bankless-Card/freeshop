@@ -79,6 +79,7 @@ contract EscrowHandler is Test {
 
     function withdraw() external {
         uint256 merchantBefore = merchant.balance;
+        vm.prank(merchant);
         store.withdraw();
         ghostWithdrawn += merchant.balance - merchantBefore;
     }

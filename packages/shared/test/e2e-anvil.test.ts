@@ -206,8 +206,8 @@ describe("storefront purchase protocol on anvil", () => {
     });
     expect(available).toBe(PRICE); // one live order remains after the refund
 
-    const withdrawHash = await buyer.writeContract({
-      // anyone can call; funds still go to the merchant
+    const withdrawHash = await merchant.writeContract({
+      // merchant-only
       address: storeAddress,
       abi: storeEscrowAbi,
       functionName: "withdraw",

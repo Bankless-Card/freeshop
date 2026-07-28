@@ -192,6 +192,7 @@ contract StoreEscrowEthTest is Test {
 
     function test_refund_revertsWhenBalanceWithdrawn() public {
         uint256 orderId = _buy();
+        vm.prank(merchant);
         store.withdraw();
         vm.prank(merchant);
         vm.expectRevert(StoreEscrow.InsufficientEscrowBalance.selector);
@@ -200,6 +201,7 @@ contract StoreEscrowEthTest is Test {
 
     function test_refund_afterMerchantTopUp() public {
         uint256 orderId = _buy();
+        vm.prank(merchant);
         store.withdraw();
 
         vm.deal(merchant, PRICE);
@@ -266,8 +268,9 @@ contract StoreEscrowEthTest is Test {
         vm.prank(merchant);
         store.refund(orderId);
 
-        // The reentrant withdraw() reverted inside the attacker's receive, so the push failed
-        // and the refund was queued instead — funds never left through the reentrant path.
+        // The reentrant withdraw() reverted inside the attacker's receive (onlyMerchant; the
+        // reentrancy guard backstops it), so the push failed and the refund was queued instead
+        // — funds never left through the reentrant path.
         assertEq(store.pendingRefunds(address(attacker)), PRICE);
         assertEq(address(attacker).balance, 0);
         assertEq(address(store).balance, PRICE);
@@ -275,23 +278,30 @@ contract StoreEscrowEthTest is Test {
 
     // ---- withdraw ----
 
-    function test_withdraw_paysMerchantNotCaller() public {
+    function test_withdraw_paysMerchant() public {
         _buy();
         _buy();
         uint256 merchantBefore = merchant.balance;
-        uint256 strangerBefore = stranger.balance;
 
         vm.expectEmit(true, true, true, true);
-        emit StoreEscrow.Withdrawn(stranger, 2 * PRICE);
-        vm.prank(stranger);
+        emit StoreEscrow.Withdrawn(merchant, 2 * PRICE);
+        vm.prank(merchant);
         store.withdraw();
 
         assertEq(merchant.balance, merchantBefore + 2 * PRICE);
-        assertEq(stranger.balance, strangerBefore);
         assertEq(address(store).balance, 0);
     }
 
+    function test_withdraw_onlyMerchant() public {
+        _buy();
+        vm.prank(stranger);
+        vm.expectRevert(StoreEscrow.NotMerchant.selector);
+        store.withdraw();
+        assertEq(address(store).balance, PRICE);
+    }
+
     function test_withdraw_rejectsWhenEmpty() public {
+        vm.prank(merchant);
         vm.expectRevert(StoreEscrow.NothingToWithdraw.selector);
         store.withdraw();
     }
@@ -306,6 +316,7 @@ contract StoreEscrowEthTest is Test {
         store.refund(hostileOrder); // queued: liability = PRICE
 
         uint256 merchantBefore = merchant.balance;
+        vm.prank(merchant);
         store.withdraw();
         assertEq(merchant.balance, merchantBefore + PRICE); // only the non-liability half
         assertEq(address(store).balance, PRICE); // queued refund stays reserved
@@ -395,7 +406,7 @@ contract StoreEscrowUsdcTest is Test {
     function test_withdraw_paysMerchantInTokens() public {
         _buy();
         _buy();
-        vm.prank(buyer); // anyone may call; merchant still gets paid
+        vm.prank(merchant);
         store.withdraw();
         assertEq(usdc.balanceOf(merchant), 2 * PRICE);
         assertEq(usdc.balanceOf(address(store)), 0);

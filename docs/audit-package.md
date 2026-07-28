@@ -24,7 +24,7 @@ treasury. Each StoreEscrow sells one product at a fixed price in a single asset 
 `address(0)` sentinel, or one allowlisted ERC-20 — USDC at launch). Buyers call `pay()` with an
 encrypted fulfillment blob that is **emitted in the event, never stored**. Proceeds accrue in
 the contract (escrow) so merchant-initiated full refunds stay payable; the merchant withdraws
-via `withdraw()`, which **always pays the immutable `merchant` address regardless of caller**.
+via `withdraw()` (merchant-only), which **always pays the immutable `merchant` address**.
 
 The platform is deliberately never in the money path: merchants can operate their store
 (status updates, refunds, withdrawals) directly against the contract with no platform
@@ -36,9 +36,9 @@ to affect an already-deployed store.
 | Actor | Powers | Trust assumption |
 | --- | --- | --- |
 | Factory owner (platform) | set `launchFee`, `treasury`, ERC-20 allowlist — affects **future deploys only** | Semi-trusted; must not be able to touch existing stores or their funds (please verify) |
-| Merchant (per store) | `setStatus`, `refund`; receives `withdraw()` proceeds | Trusted for their own store only; can rug their own buyers by never fulfilling (accepted — see §5) |
+| Merchant (per store) | `setStatus`, `refund`, `withdraw` (proceeds always to the immutable merchant address) | Trusted for their own store only; can rug their own buyers by never fulfilling (accepted — see §5) |
 | Buyer | `pay`, `claimRefund` | Untrusted; may be a hostile contract |
-| Anyone | `withdraw()` (pays merchant), sending ETH to an ETH-store's `receive()` | Untrusted |
+| Anyone | sending ETH to an ETH-store's `receive()` (top-up) | Untrusted |
 
 ## 3. Core protocol properties to verify
 
@@ -72,9 +72,10 @@ is a valid finding:
   forwarding; on failure it credits `pendingRefunds[buyer]` for `claimRefund()`. CEI is
   followed (status set before the call) and every mutating entry point shares the reentrancy
   guard. ERC-20 refunds are plain `safeTransfer` (no recipient hooks on allowlisted tokens).
-- **`withdraw()` is callable by anyone** and pays only the immutable merchant. This
-  intentionally leaves room for a future batched multi-store sweep contract without changing
-  StoreEscrow.
+- **`withdraw()` is merchant-only** and pays only the immutable merchant. It was originally
+  permissionless (to leave room for a batched multi-store sweep); an audit finding showed a
+  third party could front-run `refund()` with `withdraw()` to force `InsufficientEscrowBalance`,
+  so it is now restricted. A future batch sweep would use a merchant-signed permit instead.
 - **Immutable `merchant`** (no payout rotation) and **one product per contract** — v1 product
   decisions; fewer money-moving functions to audit.
 - **ERC-20 allowlist at the factory** (USDC at launch) is the primary defense against

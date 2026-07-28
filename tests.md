@@ -166,12 +166,15 @@ cast send $STORE "refund(uint256)" 1 --rpc-url http://localhost:8545 --private-k
 Then place a second order as the buyer and:
 
 ```sh
+# From the buyer's key: must revert with NotMerchant (withdraw is merchant-only)
 cast send $STORE "withdraw()" --rpc-url http://localhost:8545 \
   --private-key 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d
+
+cast send $STORE "withdraw()" --rpc-url http://localhost:8545 --private-key $MERCHANT_PK
 ```
 
-- [ ] Withdraw was sent by the **buyer's** key, but the **merchant** balance received the funds
-      (withdraw always pays the immutable merchant — anyone may trigger it).
+- [ ] The buyer's withdraw attempt reverted; the merchant's succeeded and the merchant balance
+      received the funds (withdraw always pays the immutable merchant address).
 
 ### 5c. Storefront merchant dashboard (admin.html — no backend)
 
