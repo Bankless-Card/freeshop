@@ -34,7 +34,8 @@ export default function Stores() {
     address: publicEnv.factoryAddress,
     abi: storefrontFactoryAbi,
     functionName: "getStores",
-    args: me.data?.address ? [me.data.address] : undefined,
+    // Always a 1-tuple so TS picks the unpaginated overload; `enabled` gates the missing address.
+    args: [me.data?.address ?? "0x0000000000000000000000000000000000000000"],
     query: { enabled: !!me.data?.address && !!publicEnv.factoryAddress },
   });
 

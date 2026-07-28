@@ -77,6 +77,22 @@ contract StorefrontFactory is Ownable {
         return _storesByAdmin[admin];
     }
 
+    /// @notice Paginated registry read for admins with more stores than one eth_call can return.
+    ///         `offset` past the end returns an empty array; `limit` is clamped to the remainder.
+    function getStores(address admin, uint256 offset, uint256 limit)
+        external
+        view
+        returns (address[] memory page)
+    {
+        address[] storage all = _storesByAdmin[admin];
+        if (offset >= all.length) return page; // empty
+        uint256 remaining = all.length - offset;
+        page = new address[](limit < remaining ? limit : remaining);
+        for (uint256 i = 0; i < page.length; i++) {
+            page[i] = all[offset + i];
+        }
+    }
+
     function storeCount(address admin) external view returns (uint256) {
         return _storesByAdmin[admin].length;
     }

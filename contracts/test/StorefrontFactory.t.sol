@@ -129,6 +129,53 @@ contract StorefrontFactoryTest is Test {
         assertEq(stores[1], b);
     }
 
+    // ---- getStores pagination ----
+
+    function _deployStores(uint256 n) internal returns (address[] memory deployed) {
+        deployed = new address[](n);
+        vm.startPrank(admin);
+        for (uint256 i = 0; i < n; i++) {
+            deployed[i] = factory.deployStore{value: LAUNCH_FEE}(admin, address(0), PRICE, PUBKEY, SCHEMA_HASH);
+        }
+        vm.stopPrank();
+    }
+
+    function test_getStores_paginated_fullRangeMatchesUnpaginated() public {
+        _deployStores(5);
+        assertEq(factory.getStores(admin, 0, 5), factory.getStores(admin));
+    }
+
+    function test_getStores_paginated_middlePage() public {
+        address[] memory deployed = _deployStores(5);
+        address[] memory page = factory.getStores(admin, 1, 2);
+        assertEq(page.length, 2);
+        assertEq(page[0], deployed[1]);
+        assertEq(page[1], deployed[2]);
+    }
+
+    function test_getStores_paginated_limitClampedToTail() public {
+        address[] memory deployed = _deployStores(5);
+        address[] memory page = factory.getStores(admin, 3, 10);
+        assertEq(page.length, 2);
+        assertEq(page[0], deployed[3]);
+        assertEq(page[1], deployed[4]);
+    }
+
+    function test_getStores_paginated_offsetAtOrPastEndIsEmpty() public {
+        _deployStores(3);
+        assertEq(factory.getStores(admin, 3, 1).length, 0);
+        assertEq(factory.getStores(admin, 100, 1).length, 0);
+    }
+
+    function test_getStores_paginated_zeroLimitIsEmpty() public {
+        _deployStores(3);
+        assertEq(factory.getStores(admin, 0, 0).length, 0);
+    }
+
+    function test_getStores_paginated_unknownAdminIsEmpty() public view {
+        assertEq(factory.getStores(stranger, 0, 10).length, 0);
+    }
+
     // ---- owner setters ----
 
     function test_setLaunchFee_appliesToFutureDeploysOnly() public {
