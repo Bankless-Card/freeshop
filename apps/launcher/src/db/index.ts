@@ -1,6 +1,6 @@
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { PgliteDatabase } from "drizzle-orm/pglite";
-import { databaseUrl } from "@/lib/env";
+import { databaseUrl, pgliteDir } from "@/lib/env";
 import * as schema from "./schema";
 
 export type Db = NodePgDatabase<typeof schema> | PgliteDatabase<typeof schema>;
@@ -37,11 +37,11 @@ async function createDb(): Promise<Db> {
     const { Pool } = await import("pg");
     return drizzle(new Pool({ connectionString: databaseUrl }), { schema });
   }
-  // Zero-infra dev default: embedded Postgres (PGlite) persisted under .data/.
+  // Zero-infra dev default: embedded Postgres (PGlite) persisted under .data/ (path overridable).
   const { mkdirSync } = await import("node:fs");
-  mkdirSync(".data/pglite", { recursive: true });
+  mkdirSync(pgliteDir, { recursive: true });
   const { drizzle } = await import("drizzle-orm/pglite");
-  return drizzle(".data/pglite", { schema }) as unknown as Db;
+  return drizzle(pgliteDir, { schema }) as unknown as Db;
 }
 
 async function applyBootstrap(db: Db): Promise<void> {

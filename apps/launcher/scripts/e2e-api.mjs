@@ -6,7 +6,7 @@
  */
 import { spawn } from "node:child_process";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, rmSync } from "node:fs";
 import { unzipSync, strFromU8 } from "fflate";
 import { createPublicClient, createTestClient, createWalletClient, http, parseEther, parseEventLogs } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
@@ -20,8 +20,16 @@ const ANVIL_PORT = 8545; // must match the RPC baked into the build (anvil defau
 // accounts a human created in the local PGlite DB (e.g. via the anvil dev keys).
 const MERCHANT_PK = generatePrivateKey();
 
+// Throwaway PGlite dir so a killed run can never corrupt the real dev DB (.data/pglite). Passed to
+// the server via PGLITE_DIR (see src/lib/env.ts) and wiped on both ends — start fresh, leave clean.
+const SCRATCH_DB = new URL("../.data/e2e-pglite", import.meta.url).pathname;
+rmSync(SCRATCH_DB, { recursive: true, force: true });
+
 const children = [];
-const cleanup = () => children.forEach((child) => child.kill());
+const cleanup = () => {
+  children.forEach((child) => child.kill());
+  rmSync(SCRATCH_DB, { recursive: true, force: true });
+};
 process.on("exit", cleanup);
 
 function start(command, args, options = {}) {
@@ -71,7 +79,7 @@ async function api(path, init = {}) {
 // ——— boot ———
 start("anvil", ["--port", String(ANVIL_PORT), "--silent"]);
 start("pnpm", ["exec", "next", "start", "-p", String(PORT)], {
-  env: { ...process.env, SESSION_SECRET: "e2e-test-session-secret-0123456789abcdef" },
+  env: { ...process.env, SESSION_SECRET: "e2e-test-session-secret-0123456789abcdef", PGLITE_DIR: SCRATCH_DB },
 });
 await waitFor(`http://127.0.0.1:${ANVIL_PORT}`);
 await waitFor(`${BASE}/api/me`, 30_000, true);
@@ -253,13 +261,18 @@ await api("/api/auth/nonce");
   );
   assert.equal(mismatched.status, 400, "storeAddress/URL mismatch rejected");
 
-  // A store whose on-chain merchant is someone else must be inaccessible to this session.
-  const otherStoreHash = await wallet.writeContract({
+  // A store whose on-chain admin is someone else must be inaccessible to this session.
+  // Admin is always the deployer (deployStore takes no admin param), so deploy from a second
+  // wallet to make the on-chain admin differ from the session's.
+  const otherAccount = privateKeyToAccount(generatePrivateKey());
+  await testClient.setBalance({ address: otherAccount.address, value: parseEther("1") });
+  const otherWallet = createWalletClient({ account: otherAccount, chain: anvil, transport: http(rpc) });
+  const otherStoreHash = await otherWallet.writeContract({
     address: factory,
     abi: factoryArtifact.abi,
     functionName: "deployStore",
     args: [
-      "0x2222222222222222222222222222222222222222",
+      otherAccount.address,
       "0x0000000000000000000000000000000000000000",
       parseEther("0.01"),
       `0x${"11".repeat(32)}`,

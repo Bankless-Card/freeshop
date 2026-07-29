@@ -24,5 +24,11 @@ export function sessionSecret(): string {
 
 export const databaseUrl = process.env.DATABASE_URL || undefined;
 
+/**
+ * Directory for the embedded PGlite dev DB (used only when DATABASE_URL is unset). Overridable so
+ * the API e2e can point at a throwaway dir — a killed test run must never corrupt the real dev DB.
+ */
+export const pgliteDir = process.env.PGLITE_DIR || ".data/pglite";
+
 /** Base URL of the Ponder indexer (server-only; the browser goes through /api/indexer). */
 export const ponderUrl = process.env.PONDER_URL || "http://localhost:42069";
