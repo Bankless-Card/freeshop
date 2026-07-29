@@ -76,6 +76,7 @@ echo '/swapfile none swap sw 0 0' >> /etc/fstab
 
 ```sh
 cd contracts
+export DEPLOYER_KEY=0x...           # funded deployer wallet's private key (the account from prerequisites)
 export SEPOLIA_RPC_URL=https://...
 export ETHERSCAN_API_KEY=...
 export TREASURY=0x...              # optional, defaults to deployer

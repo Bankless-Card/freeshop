@@ -207,6 +207,37 @@ Open `<storefront url>/admin.html` (in dev: the vite dev server URL + `/admin.ht
   with the new `FACTORY_ADDRESS` (wipe `apps/indexer/.ponder/`), clear MetaMask activity data,
   and expect stale saved configs in the launcher for old store addresses. On Sepolia/mainnet
   this cannot happen — deployed stores are permanent.
+- **"Insufficient funds" / out of gas launching a shop or checking out** — the account MetaMask is
+  connected as holds no ETH. Anvil prefunds its dev accounts with 10000 ETH each (merchant #0 and
+  buyer #1 above), but a *fresh* MetaMask account you created is not one of them, so it starts empty.
+  Fund whatever address MetaMask shows as connected — no faucet needed:
+  ```sh
+  # instant, works for any address (anvil cheat code). 0x21e19e0c9bab2400000 = 10000 ETH
+  cast rpc anvil_setBalance <YOUR_ADDRESS> 0x21e19e0c9bab2400000 --rpc-url http://localhost:8545
+  # …or send from prefunded dev account #0:
+  cast send <YOUR_ADDRESS> --value 10ether --rpc-url http://localhost:8545 \
+    --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+  ```
+  `anvil_setBalance` changes state without mining a block, and MetaMask only re-reads balances when
+  the block number advances — so a freshly-funded account can keep showing the stale 0. Mine one
+  block to force the refresh (then toggle networks or lock/unlock if it still lags):
+  ```sh
+  cast rpc anvil_mine 1 --rpc-url http://localhost:8545
+  ```
+  Simplest alternative: just connect as the imported dev accounts (#0/#1), which are always funded.
+  On a `--state` chain these balances persist across restarts.
+- **Balance shows 0 and the currency reads "GO" (not ETH)** — chain ID `31337` collides with
+  GoChain's testnet, so MetaMask matches the network to its built-in GoChain entry: it relabels the
+  currency **GO** (cosmetic) and, worse, often auto-fills GoChain's *public* RPC — so it queries the
+  wrong chain and never sees your anvil balance. Fix: MetaMask → **Settings → Networks** → the 31337
+  network → **Default RPC URL** must be exactly `http://127.0.0.1:8545` (edit it if it points at a
+  GoChain/public URL; if there are two 31337 entries, select the localhost one). The symbol may still
+  read GO — ignore it, it is the same native ETH on your anvil. Then **Clear activity tab data**
+  (Advanced) to drop the stale balance. Confirm the chain independently with
+  `cast balance <YOUR_ADDRESS> --rpc-url http://localhost:8545 --ether`. To avoid the collision
+  entirely you can run anvil with a non-GoChain id (`anvil --chain-id 1337 …`), but that means
+  updating `NEXT_PUBLIC_CHAIN_ID` in the launcher/storefront and redeploying the factory on the fresh
+  chain.
 - **Stuck on "Confirm in your wallet…"** — MetaMask didn't raise its popup. Click the extension
   icon directly; the pending request is queued inside it.
 - **Stuck on "Deploying…" / tx sent but never mined** — almost always a stale nonce after an

@@ -36,6 +36,7 @@ private key above is anvil's well-known dev account #0 — never use it anywhere
 Needs a funded deployer key plus RPC and Etherscan API keys:
 
 ```sh
+export DEPLOYER_KEY=0x...    # funded deployer wallet's private key; becomes factory owner + default treasury
 export SEPOLIA_RPC_URL=...
 export ETHERSCAN_API_KEY=...
 export TREASURY=0x...        # optional, defaults to deployer
