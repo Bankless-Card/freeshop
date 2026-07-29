@@ -71,13 +71,18 @@ ok "role + freeshop_launcher + freeshop_indexer"
 
 # ——— 6. env files (regenerated every deploy — deploy.env is the source of truth) ———
 log "env files"
+# DATABASE_SCHEMA is per-factory: Ponder rejects a schema previously used by a *different* app
+# (a factory redeploy changes address/start block), so a fixed name crash-loops with MigrationError
+# until manually dropped. Deriving it from FACTORY_ADDRESS means a redeploy gets a fresh schema
+# automatically while same-factory code deploys resume the existing index. Old per-factory schemas
+# linger in freeshop_indexer (harmless; prune retired ones by hand — see TASKS.md redeploy runbook).
 cat > "$APP/apps/indexer/.env.production" <<EOF
 INDEXER_CHAIN_ID=$CHAIN_ID
 INDEXER_RPC_URL=$RPC_URL
 FACTORY_ADDRESS=$FACTORY_ADDRESS
 START_BLOCK=$START_BLOCK
 DATABASE_URL=postgres://freeshop:$DB_PASSWORD@localhost/freeshop_indexer
-DATABASE_SCHEMA=freeshop
+DATABASE_SCHEMA=freeshop_$(echo "$FACTORY_ADDRESS" | tr 'A-Z' 'a-z')
 EOF
 cat > "$APP/apps/launcher/.env.production" <<EOF
 NEXT_PUBLIC_CHAIN_ID=$CHAIN_ID
