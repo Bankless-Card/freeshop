@@ -22,6 +22,6 @@
     "@rolldown/binding-darwin-arm64": "^1.1.4",
     "@types/node": "^26.1.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   }
 }
